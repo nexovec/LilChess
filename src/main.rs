@@ -1,15 +1,7 @@
-use tetra::{Context, State, graphics::text::{Text, VectorFontBuilder}, math::Vec2};
+mod game;
+use game::{Scene, MenuScene};
+use tetra::{Context, State, graphics::text::{Text, VectorFontBuilder}, math::Vec2, window};
 
-
-enum Transition{
-    Push(Box<dyn Scene>),
-    Pop,
-    None
-}
-trait Scene{
-    fn update(&mut self, ctx: &mut Context)->Transition;
-    fn draw(&mut self, ctx:&mut Context)->Transition;
-}
 struct GameState{
     scenes: Vec<Box<dyn Scene>>
 }
@@ -23,41 +15,43 @@ impl GameState{
 }
 impl State for GameState{
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result{
-        self.scenes.last_mut().unwrap().update(ctx);
+        match self.scenes.last_mut(){
+            Some(active_scene) => match active_scene.update(ctx){
+                game::Transition::None=>{}
+                game::Transition::Push(s)=>{
+                    self.scenes.push(s)
+                }
+                game::Transition::Pop => {
+                    self.scenes.pop();
+                }
+            },
+            None=>window::quit(ctx)
+        }
         return Ok(());
     }
     fn draw(&mut self, ctx: &mut tetra::Context) -> tetra::Result{
-        tetra::graphics::clear(ctx, tetra::graphics::Color::BLUE);
-        Ok(())
+        match self.scenes.last_mut(){
+            Some(active_scene) => match active_scene.draw(ctx){
+                game::Transition::None=>{}
+                game::Transition::Push(s)=>{
+                    self.scenes.push(s)
+                }
+                game::Transition::Pop => {
+                    self.scenes.pop();
+                }
+            },
+            None=>window::quit(ctx)
+        }
+        return Ok(());
     }
 }
 
 
-struct MenuScene{
-    sample_text: Text
-}
-impl MenuScene{
-    fn new(ctx: &mut Context) -> tetra::Result<MenuScene>{
-        let font = VectorFontBuilder::new("./res/font.ttf")?;
-        let temp = MenuScene{
-            sample_text: Text::new("Hello", font.with_size(ctx, 16.0)?),
-        };
-        Ok(temp)
-    }
-}
-impl Scene for MenuScene{
-    fn update(&mut self, _ctx: &mut Context) -> Transition{
-        Transition::None
-    }
-    fn draw(&mut self, ctx:&mut Context) -> Transition{
-        self.sample_text.draw(ctx, Vec2::new(16.0,16.0));
-        Transition::None
-    }
-}
+
 #[allow(unused_must_use)]
 fn main()->tetra::Result{
     tetra::ContextBuilder::new("Hello, world!",1280,720)
-    .quit_on_escape(true)
+    .quit_on_escape(true).show_mouse(true)
     .build()?
     .run(|ctx|GameState::new(ctx));
     tetra::Result::Ok(())
