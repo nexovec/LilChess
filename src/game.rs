@@ -33,24 +33,30 @@ impl MenuScene{
         let x_offset = 800/2-30;
         let y_offset= 260;
         let x_border = 10;
-        let y_border = 1;
-        let y_spacing = 10;
+        let y_border = 10;
+        let y_spacing = 5;
 
         let x_coord = x_offset-x_border;
+        let mut h = 0;
         for i in 0..self.text_options.len(){
             let dims = self.text_options.index_mut(i).get_bounds(ctx).unwrap();
-            let y_tex = dims.height as i32+y_border*2;
             let x_tex = dims.width as i32+x_border*2;
-            let y_coord = y_offset-y_border+i as i32*(dims.width as i32+y_border*2);
-            if self.is_mouse_hovered_over_rectangle(ctx, Vec4::new(x_coord as f32,y_coord as f32,x_tex as f32,y_tex as f32)){
+            let y_tex = dims.height as i32+y_border*2;
+            h+=dims.height as i32;
+            let y_coord = y_offset+h+i as i32*
+            (y_spacing + y_border * 2); // FIXME: dims.height isn't constant
+            if self.is_mouse_hovered_over_rectangle(ctx,
+                Vec2::new(x_coord as f32,y_coord as f32),
+                Vec2::new(x_tex as f32,y_tex as f32)){
                 return Some(i as i32);
             }
         }
         None
     }
-    fn is_mouse_hovered_over_rectangle(&mut self, ctx:&Context, dim: Vec4<f32>)->bool{
+    fn is_mouse_hovered_over_rectangle(&mut self, ctx:&Context, pos: Vec2<f32>, size: Vec2<f32>)->bool{
         let mp = tetra::input::get_mouse_position(ctx);
-        mp.x>=dim.x && mp.x<dim.x+dim.z && mp.y>=dim.y && mp.y <dim.w
+        println!("x:{}|y:{}", pos.x + size.x, mp.x);
+        mp.x >= pos.x && mp.x < pos.x + size.x && mp.y >= pos.y && mp.y < pos.y + size.y
     }
 }
 impl Scene for MenuScene{
@@ -61,16 +67,18 @@ impl Scene for MenuScene{
         let x_offset = 800/2 - 30;
         let y_offset = 260;
         let x_border = 10;
-        let y_border = 1;
-        let y_spacing = 10;
-        let box_r = (255.0*0.5) as u8;
-        let box_g = (255.0*0.3) as u8;
-        let box_b = (255.0*0.8) as u8;
-        let box_a = (255.0*0.8) as u8;
+        let y_border = 10;
+        let y_spacing = 5;
+        let box_r = (255.0*0.2) as u8;
+        let box_g = (255.0*0.2) as u8;
+        let box_b = (255.0*0.2) as u8;
+        let box_a = (255.0*0.6) as u8;
         let mut dim:Rectangle;
         graphics::clear(ctx, self.bcg_color);
+        // if let Some(item) = Some(1){
         if let Some(item) = self.get_hovered_menu_item_index(ctx){
             //TODO: draw a rectangle around hovered UI item
+            // println!("{}", item);
             dim = self.text_options.index_mut(item as usize).get_bounds(ctx).unwrap();
             let y_tex = dim.height as i32+y_border*2;
             let x_tex = dim.width as i32+x_border*2;
@@ -79,14 +87,15 @@ impl Scene for MenuScene{
             .take(x_tex as usize*y_tex as usize).flatten().copied().collect::<Vec<u8>>();
             let tex = Texture::from_rgba(ctx,x_tex,y_tex,&pixels);
             let x_coord = x_offset-x_border;
-            let y_coord = y_offset-y_border+item*(dim.width as i32+y_border*2);
+            let y_coord = y_offset-y_border+item*(dim.height as i32+y_border*2);
             tex.unwrap().draw(ctx, Vec2::<f32>::new(x_coord as f32,y_coord as f32));
         }
+        // draw text
         for i in 0..self.text_options.len(){
-            dim = self.text_options.index_mut(i as usize).get_bounds(ctx).unwrap();
             let text = self.text_options.index_mut(i);
-            let x_coord = x_offset-x_border;
-            let y_coord= y_offset+i as i32*(dim.height as i32+y_spacing+y_border*2);
+            dim = text.get_bounds(ctx).unwrap();
+            let x_coord = x_offset;
+            let y_coord = y_offset + i as i32 * (dim.height as i32 + y_spacing + y_border * 2);
             text.draw(ctx, Vec2::new( x_coord as f32, y_coord as f32));
         }
         Transition::None

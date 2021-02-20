@@ -50,7 +50,7 @@ impl State for GameState{
 
 #[allow(unused_must_use)]
 fn main()->tetra::Result{
-    tetra::ContextBuilder::new("Hello, world!",1280,720)
+    tetra::ContextBuilder::new("Lil' chess client",1280,720)
     .quit_on_escape(true).show_mouse(true)
     .build()?
     .run(|ctx|GameState::new(ctx));
