@@ -9,10 +9,10 @@ pub struct MenuButton{
     borders: Vec2<i32>,
     pos: Vec2<i32>,
     text:Text,
-    on_click:Box<dyn Fn() -> Transition>
+    on_click:Box<dyn Fn(&mut Context) -> Transition>
 }
 impl MenuButton{
-    pub fn new(borders: Vec2<i32>, pos: Vec2<i32>, text:Text, on_click:Box<dyn Fn() -> Transition>)->MenuButton{
+    pub fn new(borders: Vec2<i32>, pos: Vec2<i32>, text:Text, on_click:Box<dyn Fn(&mut Context) -> Transition>)->MenuButton{
         MenuButton{
             borders,
             pos,
@@ -26,7 +26,7 @@ impl UIMouseInteractableRect for MenuButton{
         let temp = self.text.get_bounds(ctx).unwrap();
         if self.is_hovered(ctx, self.pos.borrow(), Vec2::<f32>::new(temp.width, temp.height)+(self.borders*2).as_()){
             if tetra::input::is_mouse_button_pressed(ctx, MouseButton::Left){
-                return (*self.on_click)();
+                return (*self.on_click)(ctx);
             }
         }
         Transition::None
