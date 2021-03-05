@@ -28,7 +28,7 @@ impl State for GameState{
             },
             None=>window::quit(ctx)
         }
-        return Ok(());
+        Ok(())
     }
     fn draw(&mut self, ctx: &mut tetra::Context) -> tetra::Result{
         match self.scenes.last_mut(){

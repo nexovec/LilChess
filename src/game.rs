@@ -23,7 +23,7 @@ impl MenuScene {
         let borders1 = Vec2::new(10,10);
         let pos1 = Vec2::new(10,10);
         let text1 = Text::new("Quit nub", font.with_size(ctx, size)?);
-        let func1 = Box::new(||{});
+        let func1 = Box::new(||{Transition::Pop});
         let btn1 = MenuButton::new(borders1,pos1,text1,func1);
         Ok(MenuScene{
             bcg_color: Color::rgb(0.2,0.8,0.4),
@@ -31,17 +31,24 @@ impl MenuScene {
         })
     }
 }
+// TODO: refactor
 impl Scene for MenuScene{
     fn draw(&mut self, ctx: &mut Context)->Transition {
         for i in self.buttons.iter_mut(){
-            i.draw(ctx);
+            match i.draw(ctx){
+                Transition::Pop=>return Transition::Pop,
+                _=>continue
+            }
         }
         Transition::None
     }
 
     fn update(&mut self, ctx: &mut Context)->Transition {
         for i in self.buttons.iter_mut(){
-            i.update(ctx);
+            match i.update(ctx){
+                Transition::Pop=>return Transition::Pop,
+                _=>continue
+            }
         }
         Transition::None
     }

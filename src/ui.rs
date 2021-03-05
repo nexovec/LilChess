@@ -7,10 +7,10 @@ pub struct MenuButton{
     borders: Vec2<i32>,
     pos: Vec2<i32>,
     text:Text,
-    on_click:Box<dyn Fn() -> ()>
+    on_click:Box<dyn Fn() -> Transition>
 }
 impl MenuButton{
-    pub fn new(borders: Vec2<i32>, pos: Vec2<i32>, text:Text, on_click:Box<dyn Fn() -> ()>)->MenuButton{
+    pub fn new(borders: Vec2<i32>, pos: Vec2<i32>, text:Text, on_click:Box<dyn Fn() -> Transition>)->MenuButton{
         MenuButton{
             borders,
             pos,
@@ -24,14 +24,10 @@ impl UIMouseInteractableRect for MenuButton{
         let temp = self.text.get_bounds(ctx).unwrap();
         if self.is_hovered(ctx, self.pos.borrow(), Vec2::<f32>::new(temp.width, temp.height)){
             if tetra::input::is_mouse_button_pressed(ctx, MouseButton::Left){
-                exit(0);
+                return (*self.on_click)();
             }
         }
         Transition::None
-    }
-
-    fn on_click()->tetra::Result<game::Transition> {
-        todo!()
     }
 }
 impl Scene for MenuButton{
@@ -48,12 +44,10 @@ trait UIMouseInteractableRect{
     fn is_hovered(& self, ctx: &mut Context, pos: &Vec2<i32>, size: Vec2<f32>)->bool{
         let pos = pos.as_();
         let mp = tetra::input::get_mouse_position(ctx);
-        println!("newp {} {}", mp.x, mp.y);
         mp.x >= pos.x && mp.x < pos.x + size.x && mp.y >= pos.y && mp.y < pos.y + size.y
     }
     fn is_clicked()->bool{
         false
     }
     fn check_mouse_interaction(&mut self, ctx: &mut Context)->game::Transition;
-    fn on_click()->tetra::Result<game::Transition>;
 }
