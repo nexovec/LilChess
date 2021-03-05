@@ -24,12 +24,12 @@ impl MenuScene {
 
         let pos1 = Vec2::new(300,200);
         let text1 = Text::new("New Game", font.with_size(ctx,size)?);
-        let func1 = Box::new(|s|{Transition::Push(Box::new(GameScene::new(s)))});
+        let func1: Box<dyn Fn(&mut Context) -> Transition> = Box::new(|s|{Transition::Push(Box::new(GameScene::new(s)))});
         let btn1 = MenuButton::new(borders,pos1,text1,func1);
 
         let pos2 = Vec2::new(0,70)+pos1;
         let text2 = Text::new("Quit nub", font.with_size(ctx, size)?);
-        let func2 = Box::new(|_|{Transition::Pop});
+        let func2: Box<dyn Fn(&mut Context) -> Transition> = Box::new(|_|{Transition::Pop});
         let btn2 = MenuButton::new(borders,pos2,text2,func2);
 
         Ok(MenuScene{
