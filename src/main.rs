@@ -1,4 +1,5 @@
 mod game;
+mod ui;
 use game::{Scene, MenuScene};
 use tetra::{Context, State, graphics::text::{Text, VectorFontBuilder}, math::Vec2, window};
 
