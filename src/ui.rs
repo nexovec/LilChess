@@ -22,18 +22,18 @@ impl MenuButton{
     }
 }
 impl UIMouseInteractableRect for MenuButton{
-    fn check_mouse_interaction(&mut self, ctx: &mut Context)->Transition {
+    fn check_mouse_interaction(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
         let temp = self.text.get_bounds(ctx).unwrap();
         if self.is_hovered(ctx, self.pos.borrow(), Vec2::<f32>::new(temp.width, temp.height)+(self.borders*2).as_()){
             if tetra::input::is_mouse_button_pressed(ctx, MouseButton::Left){
-                return (*self.on_click)(ctx);
+                return Ok((*self.on_click)(ctx));
             }
         }
-        Transition::None
+        Ok(Transition::None)
     }
 }
 impl Scene for MenuButton{
-    fn draw(&mut self, ctx: &mut Context)->Transition {
+    fn draw(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
         let temp = self.text.get_bounds(ctx).unwrap();
         let size: Vec2<f32> = (self.borders*2).as_() + Vec2::new(temp.width,temp.height);
         if self.is_hovered(ctx, &self.pos, size){
@@ -43,10 +43,10 @@ impl Scene for MenuButton{
             texture.unwrap().draw(ctx, self.pos.as_());
         }
         self.text.draw(ctx,(self.pos + self.borders).as_());
-        Transition::None
+        Ok(Transition::None)
     }
 
-    fn update(&mut self, ctx: &mut Context)->Transition {
+    fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
         self.check_mouse_interaction(ctx)
     }
 }
@@ -59,5 +59,5 @@ trait UIMouseInteractableRect{
     fn is_clicked()->bool{
         false
     }
-    fn check_mouse_interaction(&mut self, ctx: &mut Context)->game::Transition;
+    fn check_mouse_interaction(&mut self, ctx: &mut Context)->tetra::Result<Transition>;
 }

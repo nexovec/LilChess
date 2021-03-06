@@ -1,6 +1,6 @@
 mod game;
 mod ui;
-use game::{Scene, MenuScene};
+use game::{Scene, MenuScene, Transition};
 use tetra::{Context, State, graphics::text::{Text, VectorFontBuilder}, math::Vec2, window};
 
 struct GameState{
@@ -16,14 +16,19 @@ impl GameState{
 }
 impl State for GameState{
     fn update(&mut self, ctx: &mut tetra::Context) -> tetra::Result{
+        // TODO: DRY refactor
         match self.scenes.last_mut(){
             Some(active_scene) => match active_scene.update(ctx){
-                game::Transition::None=>{}
-                game::Transition::Push(s)=>{
+                Ok(Transition::None)=>{}
+                Ok(Transition::Push(s))=>{
                     self.scenes.push(s)
                 }
-                game::Transition::Pop => {
+                Ok(Transition::Pop) => {
                     self.scenes.pop();
+                },
+                Err(_)=>{
+                    // FIXME: error logging
+                    window::quit(ctx);
                 }
             },
             None=>window::quit(ctx)
@@ -33,12 +38,16 @@ impl State for GameState{
     fn draw(&mut self, ctx: &mut tetra::Context) -> tetra::Result{
         match self.scenes.last_mut(){
             Some(active_scene) => match active_scene.draw(ctx){
-                game::Transition::None=>{}
-                game::Transition::Push(s)=>{
+                Ok(Transition::None)=>{}
+                Ok(Transition::Push(s))=>{
                     self.scenes.push(s)
                 }
-                game::Transition::Pop => {
+                Ok(Transition::Pop) => {
                     self.scenes.pop();
+                },
+                Err(_)=>{
+                    // FIXME: error logging
+                    window::quit(ctx);
                 }
             },
             None=>window::quit(ctx)

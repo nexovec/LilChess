@@ -1,3 +1,4 @@
+use tetra::graphics::Canvas;
 use tetra::{Context, graphics::{Color, text::{Text, VectorFontBuilder}}, math::Vec2};
 use tetra::graphics;
 use crate::ui::MenuButton;
@@ -8,8 +9,8 @@ pub enum Transition{
     None
 }
 pub trait Scene{
-    fn draw(&mut self, ctx: &mut Context)->Transition;
-    fn update(&mut self, ctx: &mut Context)->Transition;
+    fn draw(&mut self, ctx: &mut Context)->tetra::Result<Transition>;
+    fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition>;
 }
 pub struct MenuScene{
     bcg_color: Color,
@@ -18,7 +19,7 @@ pub struct MenuScene{
 
 impl MenuScene {
     pub fn new(ctx: &mut Context)->tetra::Result<MenuScene>{
-        let font = VectorFontBuilder::new("./res/Exo2-regular.otf")?;
+        let font = VectorFontBuilder::new("./res/fonts/Exo2-regular.otf")?;
         let size = 32.0;
         let borders = Vec2::new(18,18);
 
@@ -40,42 +41,58 @@ impl MenuScene {
 }
 // TODO: refactor
 impl Scene for MenuScene{
-    fn draw(&mut self, ctx: &mut Context)->Transition {
+    fn draw(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
         graphics::clear(ctx, self.bcg_color);
         for i in self.buttons.iter_mut(){
             // TODO: use option instead
             match i.draw(ctx){
-                Transition::Pop=>return Transition::Pop,
-                Transition::Push(s)=>return Transition::Push(s),
+                Ok(Transition::Pop)=>return Ok(Transition::Pop),
+                Ok(Transition::Push(s))=>return Ok(Transition::Push(s)),
                 _=>continue
             }
         }
-        Transition::None
+        Ok(Transition::None)
     }
 
-    fn update(&mut self, ctx: &mut Context)->Transition {
+    fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
         for i in self.buttons.iter_mut(){
             match i.update(ctx){
-                Transition::Pop=>return Transition::Pop,
-                Transition::Push(s)=>return Transition::Push(s),
+                Ok(Transition::Pop)=>return Ok(Transition::Pop),
+                Ok(Transition::Push(s))=>return Ok(Transition::Push(s)),
                 _=>continue
             }
         }
-        Transition::None
+        Ok(Transition::None)
     }
 }
-struct GameScene;
+struct GameScene{
+    shader: tetra::graphics::Shader
+}
 impl GameScene{
     fn new(ctx:&mut Context)->GameScene{
-        GameScene
+        let shader = graphics::Shader::from_fragment_file(ctx,"./res/shaders/chessfrag.frag").unwrap();
+        GameScene{
+            shader
+        }
     }
 }
 impl Scene for GameScene{
-    fn draw(&mut self, ctx:&mut Context)->Transition{
-        graphics::clear(ctx, Color::BLUE);
-        Transition::None
+    fn draw(&mut self, ctx:&mut Context)->tetra::Result<Transition>{
+        graphics::clear(ctx, Color::rgb(180.0, 160.0, 180.0));
+        let cvs = Canvas::new(ctx,400,400)?;
+        // FIXME: mindnumbingly lazy
+        graphics::set_canvas(ctx, &cvs);
+        graphics::clear(ctx, Color::WHITE);
+
+        graphics::set_shader(ctx, &self.shader);
+        self.shader.set_uniform(ctx, "viewport", Vec2::<f32>::new(400.0,400.0)); // FIXME: magic numbers
+        cvs.draw(ctx, Vec2::<f32>::new(0.0,0.0));
+        graphics::reset_canvas(ctx);
+        graphics::reset_shader(ctx);
+        cvs.draw(ctx,Vec2::<f32>::new(100.0,100.0));
+        Ok(Transition::None)
     }
-    fn update(&mut self, ctx: &mut Context)->Transition{
-        Transition::None
+    fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition>{
+        Ok(Transition::None)
     }
 }
