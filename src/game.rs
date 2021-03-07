@@ -19,13 +19,13 @@ pub struct MenuScene{
 
 impl MenuScene {
     pub fn new(ctx: &mut Context)->tetra::Result<MenuScene>{
-        let font = VectorFontBuilder::new("./res/fonts/Exo2-regular.otf")?;
+        let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?;
         let size = 32.0;
         let borders = Vec2::new(18,18);
 
         let pos1 = Vec2::new(300,200);
         let text1 = Text::new("New Game", font.with_size(ctx,size)?);
-        let func1 = Box::new(|s: &mut _|{Transition::Push(Box::new(GameScene::new(s)))});
+        let func1 = Box::new(|s: &mut _|{Transition::Push(Box::new(GameScene::new(s).unwrap()))});
         let btn1 = MenuButton::new(borders,pos1,text1,func1);
 
         let pos2 = Vec2::new(0,70)+pos1;
@@ -66,30 +66,31 @@ impl Scene for MenuScene{
     }
 }
 struct GameScene{
+    canvas: Canvas,
     shader: tetra::graphics::Shader
 }
 impl GameScene{
-    fn new(ctx:&mut Context)->GameScene{
+    fn new(ctx:&mut Context)->tetra::Result<GameScene>{
         let shader = graphics::Shader::from_fragment_file(ctx,"./res/shaders/chessfrag.frag").unwrap();
-        GameScene{
+        let canvas = Canvas::new(ctx,400,400)?;
+        graphics::set_canvas(ctx, &canvas);
+        graphics::clear(ctx, Color::WHITE);
+
+        graphics::set_shader(ctx, &shader);
+        shader.set_uniform(ctx, "viewport", Vec2::<f32>::new(400.0,400.0)); // FIXME: magic numbers
+        canvas.draw(ctx, Vec2::<f32>::new(0.0,0.0));
+        graphics::reset_canvas(ctx);
+        graphics::reset_shader(ctx);
+        Ok(GameScene{
+            canvas,
             shader
-        }
+        })
     }
 }
 impl Scene for GameScene{
     fn draw(&mut self, ctx:&mut Context)->tetra::Result<Transition>{
         graphics::clear(ctx, Color::rgb(180.0, 160.0, 180.0));
-        let cvs = Canvas::new(ctx,400,400)?;
-        // FIXME: mindnumbingly lazy
-        graphics::set_canvas(ctx, &cvs);
-        graphics::clear(ctx, Color::WHITE);
-
-        graphics::set_shader(ctx, &self.shader);
-        self.shader.set_uniform(ctx, "viewport", Vec2::<f32>::new(400.0,400.0)); // FIXME: magic numbers
-        cvs.draw(ctx, Vec2::<f32>::new(0.0,0.0));
-        graphics::reset_canvas(ctx);
-        graphics::reset_shader(ctx);
-        cvs.draw(ctx,Vec2::<f32>::new(100.0,100.0));
+        self.canvas.draw(ctx,Vec2::<f32>::new(100.0,100.0));
         Ok(Transition::None)
     }
     fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition>{
