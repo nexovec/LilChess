@@ -1,7 +1,7 @@
-use tetra::graphics::Canvas;
+use tetra::graphics::{Canvas, Shader, UniformValue};
 use tetra::{Context, graphics::{Color, text::{Text, VectorFontBuilder}}, math::Vec2};
 use tetra::graphics;
-use crate::ui::MenuButton;
+use crate::ui::{MenuButton, UIFlexBox};
 
 pub enum Transition{
     Push(Box<dyn Scene>),
@@ -67,7 +67,8 @@ impl Scene for MenuScene{
 }
 struct GameScene{
     canvas: Canvas,
-    shader: tetra::graphics::Shader
+    shader: Shader,
+    history_box: UIFlexBox
 }
 impl GameScene{
     fn new(ctx:&mut Context)->tetra::Result<GameScene>{
@@ -81,9 +82,11 @@ impl GameScene{
         canvas.draw(ctx, Vec2::<f32>::new(0.0,0.0));
         graphics::reset_canvas(ctx);
         graphics::reset_shader(ctx);
+        let flex_box= UIFlexBox::new(ctx)?;
         Ok(GameScene{
             canvas,
-            shader
+            shader,
+            history_box: flex_box
         })
     }
 }
@@ -91,6 +94,9 @@ impl Scene for GameScene{
     fn draw(&mut self, ctx:&mut Context)->tetra::Result<Transition>{
         graphics::clear(ctx, Color::rgb(180.0, 160.0, 180.0));
         self.canvas.draw(ctx,Vec2::<f32>::new(100.0,100.0));
+        // TODO: draw pieces
+        // TODO: draw flexbox
+        self.history_box.draw(ctx);
         Ok(Transition::None)
     }
     fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition>{
