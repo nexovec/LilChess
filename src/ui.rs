@@ -140,3 +140,29 @@ impl Scene for UIText{
         Ok(Transition::None)
     }
 }
+ pub struct UIImage{
+    pos: Vec2<f32>,
+    contents: Texture,
+    on_hover: Box<dyn Fn(&mut Context) -> Transition>,
+    on_click: Box<dyn Fn(&mut Context) -> Transition>
+ }
+ impl UIImage{
+     pub fn new(ctx: &mut Context, pos: Vec2<f32>, contents: Texture, on_hover: Box<dyn Fn(&mut Context) -> Transition>, on_click: Box<dyn Fn(&mut Context) -> Transition>)->tetra::Result<UIImage>{
+         Ok(UIImage{
+            pos,
+            contents,
+            on_hover,
+            on_click
+         })
+     }
+ }
+ impl Scene for UIImage{
+     fn draw(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
+        self.contents.draw(ctx, self.pos);
+        Ok(Transition::None)
+    }
+
+     fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
+        Ok(Transition::None)
+    }
+ }
