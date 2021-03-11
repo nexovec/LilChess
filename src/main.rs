@@ -27,7 +27,7 @@ impl State for GameState{
                     self.scenes.pop();
                 },
                 Err(_)=>{
-                    // FIXME: error logging
+                    // TODO: error logging
                     window::quit(ctx);
                 }
             },

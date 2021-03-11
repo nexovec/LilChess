@@ -1,7 +1,7 @@
-use tetra::graphics::{Canvas, Shader, UniformValue};
+use tetra::{graphics::{Canvas, Shader, UniformValue}, math::Vec4};
 use tetra::{Context, graphics::{Color, text::{Text, VectorFontBuilder}}, math::Vec2};
 use tetra::graphics;
-use crate::ui::{MenuButton, UIFlexBox};
+use crate::ui::{MenuButton, UIFlexBox, UIText};
 
 pub enum Transition{
     Push(Box<dyn Scene>),
@@ -32,9 +32,9 @@ impl MenuScene {
         let text2 = Text::new("Quit nub", font.with_size(ctx, size)?);
         let func2 = Box::new(|_: &mut _|{Transition::Pop});
         let btn2 = MenuButton::new(borders,pos2,text2,func2);
-
+        let unit = 1.0/255.;
         Ok(MenuScene{
-            bcg_color: Color::rgb(0.2,0.8,0.4),
+            bcg_color: Color::rgb(unit*196.,unit*196.,unit*196.),
             buttons: vec![btn1,btn2]
         })
     }
@@ -67,7 +67,6 @@ impl Scene for MenuScene{
 }
 struct GameScene{
     canvas: Canvas,
-    shader: Shader,
     history_box: UIFlexBox
 }
 impl GameScene{
@@ -82,21 +81,26 @@ impl GameScene{
         canvas.draw(ctx, Vec2::<f32>::new(0.0,0.0));
         graphics::reset_canvas(ctx);
         graphics::reset_shader(ctx);
-        let flex_box= UIFlexBox::new(ctx)?;
+        let mut flex_box= UIFlexBox::new(
+            ctx, Vec2::new(400.,500.),Vec2::new(740.,100.), Vec4::<f32>::new(1.0,0.0,0.0,1.0), 3)?;
+        // FIXME: dry... Assets struct?
+        let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?;
+        let text1 = Text::new("bruh", font.with_size(ctx, 16.0)?);
+        flex_box.children.push(Box::new(UIText::new(ctx, Vec2::<f32>::new(0.,0.),text1,Box::new(|_:&mut _|{Transition::None}),Box::new(|_:&mut _|{Transition::None}))?));
         Ok(GameScene{
             canvas,
-            shader,
             history_box: flex_box
         })
     }
 }
 impl Scene for GameScene{
     fn draw(&mut self, ctx:&mut Context)->tetra::Result<Transition>{
-        graphics::clear(ctx, Color::rgb(180.0, 160.0, 180.0));
+        let unit = 1.0/255.;
+        graphics::clear(ctx, Color::rgb(unit*196.,unit*196.,unit*196.));
         self.canvas.draw(ctx,Vec2::<f32>::new(100.0,100.0));
         // TODO: draw pieces
         // TODO: draw flexbox
-        self.history_box.draw(ctx);
+        self.history_box.draw(ctx)?;
         Ok(Transition::None)
     }
     fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition>{

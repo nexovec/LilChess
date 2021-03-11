@@ -1,6 +1,6 @@
 use tetra::{graphics::{Color, Canvas, Shader, Texture}, math::Vec4};
 use tetra::graphics;
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 
 use tetra::{Context, graphics::text::Text, input::MouseButton, math::Vec2};
 // TODO: Research Vec2.as_()
@@ -63,24 +63,23 @@ trait UIMouseInteractableRect{
     fn check_mouse_interaction(&mut self, ctx: &mut Context)->tetra::Result<Transition>;
 }
 pub struct UIFlexBox{
+    pos:Vec2<f32>,
+    size:Vec2<f32>,
     border_width:i32,
-    border_color: Color,
-    children: Vec<Box<dyn Scene>>,
+    pub children: Vec<Box<dyn Scene>>,
+    texture: Texture,
     canvas: Canvas
 }
 impl UIFlexBox{
-    pub fn new(ctx:&mut Context, )->tetra::Result<UIFlexBox>{
-        // TODO: params
-        let border_width: i32 = 3;
-
+    pub fn new(ctx:&mut Context, size: Vec2<f32>, pos: Vec2<f32>, border_color: Vec4<f32>, border_width: i32)->tetra::Result<UIFlexBox>{
         let canvas = Canvas::new(ctx,400,500)?;
         let sh:Shader = Shader::from_fragment_file(ctx, "./res/shaders/box_border.frag")?;
         graphics::set_canvas(ctx, &canvas);
         graphics::set_shader(ctx, &sh);
 
         sh.set_uniform(ctx, "border_width", border_width);
-        sh.set_uniform(ctx, "viewport", Vec2::new(400.,500.)); // FIXME: magic numbers
-        sh.set_uniform(ctx, "border_color", Vec4::<f32>::new(1.0,0.0,0.0,1.0));
+        sh.set_uniform(ctx, "viewport", size); // FIXME: magic numbers
+        sh.set_uniform(ctx, "border_color", border_color);
         canvas.draw(ctx, Vec2::new(0.,0.));
 
         graphics::reset_canvas(ctx);
@@ -89,9 +88,10 @@ impl UIFlexBox{
         let children = Vec::<Box<dyn Scene>>::new();
         Ok(
             UIFlexBox{
-                border_width: border_width,
-                border_color: Color::BLUE,
+                pos,size,
+                border_width,
                 children,
+                texture: canvas.texture().clone(),
                 canvas
             }
         )
@@ -99,10 +99,44 @@ impl UIFlexBox{
 }
 impl Scene for UIFlexBox{
     fn draw(&mut self, ctx: &mut Context)->tetra::Result<Transition>{
-        self.canvas.draw(ctx, Vec2::new(740.,100.));
+        graphics::set_canvas(ctx, &self.canvas);
+        self.texture.draw(ctx, Vec2::new(0.,0.));
+        let children:&mut Vec<Box<dyn Scene>> = &mut self.children;
+        for child in children{
+            child.draw(ctx)?;// TODO: match return
+            graphics::set_canvas(ctx, &self.canvas);
+        }
+        graphics::reset_canvas(ctx);
+        self.canvas.draw(ctx, self.pos.as_());
         Ok(Transition::None)
     }
     fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition>{
+        Ok(Transition::None)
+    }
+}
+pub struct UIText{
+    pos: Vec2<f32>,
+    contents: Text,
+    on_hover: Box<dyn Fn(&mut Context) -> Transition>,
+    on_click: Box<dyn Fn(&mut Context) -> Transition>
+}
+impl UIText{
+    pub fn new(ctx:&mut Context, pos: Vec2<f32>, contents: Text, on_hover:Box<dyn Fn(&mut Context) -> Transition>, on_click: Box<dyn Fn(&mut Context) -> Transition>)->tetra::Result<UIText>{
+        Ok(UIText{
+            pos,
+            contents,
+            on_hover,
+            on_click
+        })
+    }
+}
+impl Scene for UIText{
+    fn draw(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
+        self.contents.draw(ctx, self.pos);
+        Ok(Transition::None)
+    }
+
+    fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
         Ok(Transition::None)
     }
 }
