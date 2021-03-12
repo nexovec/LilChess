@@ -1,6 +1,6 @@
-use tetra::{graphics::{Color, Canvas, Shader, Texture}, math::Vec4};
+use tetra::{graphics::{Canvas, Shader, Texture}, math::Vec4};
 use tetra::graphics;
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::Borrow;
 
 use tetra::{Context, graphics::text::Text, input::MouseButton, math::Vec2};
 // TODO: Research Vec2.as_()

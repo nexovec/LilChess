@@ -1,7 +1,7 @@
 #version 150
 
 in vec4 v_color;
-in vec4 v_uv;
+in vec2 v_uv;
 
 out vec4 o_color;
 

@@ -1,4 +1,4 @@
-use tetra::{graphics::{Canvas, Shader, Texture, UniformValue}, math::Vec4};
+use tetra::{graphics::Canvas, math::Vec4};
 use tetra::{Context, graphics::{Color, text::{Text, VectorFontBuilder}}, math::Vec2};
 use tetra::graphics;
 use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};
@@ -106,7 +106,15 @@ impl GameScene{
             ctx, Vec2::new(400.,500.),Vec2::new(740.,100.), Vec4::<f32>::new(1.0,0.0,0.0,1.0), 3)?;
         // FIXME: dry... Assets struct?
         let text1 = Text::new("bruh", font.with_size(ctx, 16.0)?);
-        flex_box.children.push(Box::new(UIText::new(ctx, Vec2::<f32>::new(0.,0.),text1,Box::new(|_:&mut _|{Transition::None}),Box::new(|_:&mut _|{Transition::None}))?));
+        flex_box.children.push(Box::new(
+            UIText::new(
+                ctx,
+                Vec2::<f32>::new(0.,0.),
+                text1,
+                Box::new(|_:&mut _|{Transition::None}),
+                Box::new(|_:&mut _|{Transition::None})
+            )?
+        ));
         Ok(GameScene{
             canvas: board_canvas,
             history_box: flex_box,
@@ -119,7 +127,7 @@ impl Scene for GameScene{
         let unit = 1.0/255.;
         graphics::clear(ctx, Color::rgb(unit*196.,unit*196.,unit*196.));
         self.canvas.draw(ctx,Vec2::<f32>::new(100.0,100.0)); // FIXME: DRY
-        self.pieces_box.draw(ctx);
+        self.pieces_box.draw(ctx)?;
         // TODO: draw pieces
         self.history_box.draw(ctx)?;
         Ok(Transition::None)

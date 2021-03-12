@@ -1,7 +1,7 @@
 mod game;
 mod ui;
 use game::{Scene, MenuScene, Transition};
-use tetra::{Context, State, graphics::text::{Text, VectorFontBuilder}, math::Vec2, window};
+use tetra::{State, window};
 
 struct GameState{
     scenes: Vec<Box<dyn Scene>>
