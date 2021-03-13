@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use crate::Assets;
+use std::rc::Rc;
 use tetra::{graphics::Canvas, math::Vec4};
 use tetra::{Context, graphics::{Color, text::{Text, VectorFontBuilder}}, math::Vec2};
 use tetra::graphics;
@@ -19,10 +22,9 @@ pub struct MenuScene{
 
 impl MenuScene {
     pub fn new(ctx: &mut Context)->tetra::Result<MenuScene>{
-        let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?;
+        let font = Assets::load_assets(ctx)?.font;
         let size = 32.0;
         let borders = Vec2::new(18,18);
-
         let pos1 = Vec2::new(300,200);
         let text1 = Text::new("New Game", font.with_size(ctx,size)?);
         let func1 = Box::new(|s: &mut _|{Transition::Push(Box::new(GameScene::new(s).unwrap()))});
@@ -72,9 +74,9 @@ struct GameScene{
 }
 impl GameScene{
     fn new(ctx:&mut Context)->tetra::Result<GameScene>{
+        let assets = Assets::load_assets(ctx)?;
         let board_size = Vec2::<f32>::new(400.0,400.0);
-        let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?;
-        let chess_font = VectorFontBuilder::new("./res/fonts/chess_font.ttf")?;
+        let font = assets.font;
 
         let shader = graphics::Shader::from_fragment_file(ctx,"./res/shaders/chessfrag.frag").unwrap();
         let board_canvas = Canvas::new(ctx,board_size.x as i32,board_size.y as i32)?;
@@ -86,16 +88,10 @@ impl GameScene{
         graphics::reset_canvas(ctx);
         graphics::reset_shader(ctx);
         // TODO: chessboard and pieces into one UIFlexBox
-
-        let mut chess_text_1  = Text::new("k",chess_font.with_size(ctx, 25.)?);
-        let chess_piece_image = Canvas::new(ctx, 50,50)?;
-        graphics::set_canvas(ctx, &chess_piece_image);
-        chess_text_1.draw(ctx, Vec2::new(0.,0.));
-        graphics::reset_canvas(ctx);
         let chess_piece = UIImage::new(
             ctx,
             Vec2::new(0.,0.),
-            chess_piece_image.texture().clone(),
+            assets.w_K,
             Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
         )?;
 
