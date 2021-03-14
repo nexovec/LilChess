@@ -88,15 +88,22 @@ impl GameScene{
         graphics::reset_canvas(ctx);
         graphics::reset_shader(ctx);
         // TODO: chessboard and pieces into one UIFlexBox
-        let chess_piece = UIImage::new(
+        let chess_piece_king = UIImage::new(
             ctx,
             Vec2::new(0.,0.),
             assets.w_K,
             Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
         )?;
+        let chess_piece_bishop = UIImage::new(
+            ctx,
+            Vec2::new(50.,0.),
+            assets.w_B,
+            Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
+        )?;
 
         let mut pieces_box = UIFlexBox::new(ctx, board_size,Vec2::<f32>::new(100.0,100.0),Vec4::<f32>::new(0.0,0.0,0.0,0.0),2)?;
-        pieces_box.children.push(Box::new(chess_piece));
+        pieces_box.children.push(Box::new(chess_piece_bishop));
+        pieces_box.children.push(Box::new(chess_piece_king));
 
         let mut flex_box= UIFlexBox::new(
             ctx, Vec2::new(400.,500.),Vec2::new(740.,100.), Vec4::<f32>::new(1.0,0.0,0.0,1.0), 3)?;
