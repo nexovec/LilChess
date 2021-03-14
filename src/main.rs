@@ -62,20 +62,21 @@ impl State for GameState{
         return Ok(());
     }
 }
+#[allow(dead_code)]
 pub struct Assets{
     font: VectorFontBuilder,
-    w_K:Texture,
-    w_Q:Texture,
-    w_R:Texture,
-    w_N:Texture,
-    w_B:Texture,
-    w_P:Texture,
-    b_K:Texture,
-    b_Q:Texture,
-    b_R:Texture,
-    b_N:Texture,
-    b_B:Texture,
-    b_P:Texture
+    w_k:Texture,
+    w_q:Texture,
+    w_r:Texture,
+    w_n:Texture,
+    w_b:Texture,
+    w_p:Texture,
+    b_k:Texture,
+    b_q:Texture,
+    b_r:Texture,
+    b_n:Texture,
+    b_b:Texture,
+    b_p:Texture
 }
 impl Assets{
     pub fn load_assets(ctx:&mut Context)->tetra::Result<Assets>{
@@ -85,7 +86,7 @@ impl Assets{
             let chess_font = VectorFontBuilder::new("./res/fonts/chess_font.ttf")?;
             let square_size: i32 = 50;
             let empty = Color::rgba(0., 0., 0., 0.);
-            let mut drawpiece: Box<dyn FnMut(&str)->tetra::Result<Texture>>= Box::new(|letter: &str|{
+            let mut draw_piece: Box<dyn FnMut(&str)->tetra::Result<Texture>>= Box::new(|letter: &str|{
                 let cvs = tetra::graphics::Canvas::new(ctx, square_size, square_size)?;
                 graphics::set_canvas(ctx, &cvs);
                 graphics::clear(ctx, empty);
@@ -93,32 +94,32 @@ impl Assets{
                 text.draw(ctx, Vec2::new(0.,0.));
                 Ok(cvs.texture().clone())
             });
-            let w_K = drawpiece("k")?;
-            let w_Q = drawpiece("q")?;
-            let w_R = drawpiece("r")?;
-            let w_N = drawpiece("h")?;
-            let w_B = drawpiece("b")?;
-            let w_P = drawpiece("p")?;
-            let b_K = drawpiece("l")?;
-            let b_Q = drawpiece("w")?;
-            let b_R = drawpiece("t")?;
-            let b_N = drawpiece("j")?;
-            let b_B = drawpiece("n")?;
-            let b_P = drawpiece("o")?;
+            let w_k = draw_piece("k")?;
+            let w_q = draw_piece("q")?;
+            let w_r = draw_piece("r")?;
+            let w_n = draw_piece("h")?;
+            let w_b = draw_piece("b")?;
+            let w_p = draw_piece("p")?;
+            let b_k = draw_piece("l")?;
+            let b_q = draw_piece("w")?;
+            let b_r = draw_piece("t")?;
+            let b_n = draw_piece("j")?;
+            let b_b = draw_piece("n")?;
+            let b_p = draw_piece("o")?;
             assets = Assets{
                 font,
-                w_K,
-                w_Q,
-                w_R,
-                w_N,
-                w_B,
-                w_P,
-                b_K,
-                b_Q,
-                b_R,
-                b_N,
-                b_B,
-                b_P
+                w_k,
+                w_q,
+                w_r,
+                w_n,
+                w_b,
+                w_p,
+                b_k,
+                b_q,
+                b_r,
+                b_n,
+                b_b,
+                b_p
             };
         }
         tetra::graphics::reset_canvas(ctx);

@@ -22,7 +22,7 @@ impl MenuButton{
         }
     }
 }
-impl UIMouseInteractableRect for MenuButton{
+impl UIMouseInteractiveRect for MenuButton{
     fn check_mouse_interaction(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
         let temp = self.text.get_bounds(ctx).unwrap();
         if self.is_hovered(ctx, self.pos.borrow(), Vec2::<f32>::new(temp.width, temp.height)+(self.borders*2).as_()){
@@ -51,7 +51,7 @@ impl Scene for MenuButton{
         self.check_mouse_interaction(ctx)
     }
 }
-trait UIMouseInteractableRect{
+trait UIMouseInteractiveRect{
     fn is_hovered(& self, ctx: &mut Context, pos: &Vec2<i32>, size: Vec2<f32>)->bool{
         let pos = pos.as_();
         let mp = tetra::input::get_mouse_position(ctx);
@@ -62,6 +62,7 @@ trait UIMouseInteractableRect{
     }
     fn check_mouse_interaction(&mut self, ctx: &mut Context)->tetra::Result<Transition>;
 }
+#[allow(dead_code)]
 pub struct UIFlexBox{
     pos:Vec2<f32>,
     size:Vec2<f32>,
@@ -110,10 +111,11 @@ impl Scene for UIFlexBox{
         self.canvas.draw(ctx, self.pos.as_());
         Ok(Transition::None)
     }
-    fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition>{
+    fn update(&mut self, _ctx: &mut Context)->tetra::Result<Transition>{
         Ok(Transition::None)
     }
 }
+#[allow(dead_code)]
 pub struct UIText{
     pos: Vec2<f32>,
     contents: Text,
@@ -121,7 +123,7 @@ pub struct UIText{
     on_click: Box<dyn Fn(&mut Context) -> Transition>
 }
 impl UIText{
-    pub fn new(ctx:&mut Context, pos: Vec2<f32>, contents: Text, on_hover:Box<dyn Fn(&mut Context) -> Transition>, on_click: Box<dyn Fn(&mut Context) -> Transition>)->tetra::Result<UIText>{
+    pub fn new(_ctx:&mut Context, pos: Vec2<f32>, contents: Text, on_hover:Box<dyn Fn(&mut Context) -> Transition>, on_click: Box<dyn Fn(&mut Context) -> Transition>)->tetra::Result<UIText>{
         Ok(UIText{
             pos,
             contents,
@@ -136,10 +138,11 @@ impl Scene for UIText{
         Ok(Transition::None)
     }
 
-    fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
+    fn update(&mut self, _ctx: &mut Context)->tetra::Result<Transition> {
         Ok(Transition::None)
     }
 }
+#[allow(dead_code)]
  pub struct UIImage{
     pos: Vec2<f32>,
     contents: Texture,
@@ -147,7 +150,7 @@ impl Scene for UIText{
     on_click: Box<dyn Fn(&mut Context) -> Transition>
  }
  impl UIImage{
-     pub fn new(ctx: &mut Context, pos: Vec2<f32>, contents: Texture, on_hover: Box<dyn Fn(&mut Context) -> Transition>, on_click: Box<dyn Fn(&mut Context) -> Transition>)->tetra::Result<UIImage>{
+     pub fn new(_ctx: &mut Context, pos: Vec2<f32>, contents: Texture, on_hover: Box<dyn Fn(&mut Context) -> Transition>, on_click: Box<dyn Fn(&mut Context) -> Transition>)->tetra::Result<UIImage>{
          Ok(UIImage{
             pos,
             contents,
@@ -162,7 +165,8 @@ impl Scene for UIText{
         Ok(Transition::None)
     }
 
-     fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition> {
+     fn update(&mut self, _ctx: &mut Context)->tetra::Result<Transition> {
+         // TODO:
         Ok(Transition::None)
     }
  }

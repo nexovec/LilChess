@@ -1,8 +1,6 @@
-use std::cell::RefCell;
 use crate::Assets;
-use std::rc::Rc;
 use tetra::{graphics::Canvas, math::Vec4};
-use tetra::{Context, graphics::{Color, text::{Text, VectorFontBuilder}}, math::Vec2};
+use tetra::{Context, graphics::{Color, text::Text}, math::Vec2};
 use tetra::graphics;
 use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};
 
@@ -91,13 +89,13 @@ impl GameScene{
         let chess_piece_king = UIImage::new(
             ctx,
             Vec2::new(0.,0.),
-            assets.w_K,
+            assets.w_k,
             Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
         )?;
         let chess_piece_bishop = UIImage::new(
             ctx,
             Vec2::new(50.,0.),
-            assets.w_B,
+            assets.w_b,
             Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
         )?;
 
@@ -135,7 +133,7 @@ impl Scene for GameScene{
         self.history_box.draw(ctx)?;
         Ok(Transition::None)
     }
-    fn update(&mut self, ctx: &mut Context)->tetra::Result<Transition>{
+    fn update(&mut self, _ctx: &mut Context)->tetra::Result<Transition>{
         Ok(Transition::None)
     }
 }
