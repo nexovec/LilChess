@@ -1,4 +1,4 @@
-use crate::game::GameContainer;
+use crate::game::*;
 use crate::Assets;
 use tetra::{graphics::Canvas, math::Vec4};
 use tetra::{Context, graphics::{Color, text::Text}, math::Vec2};
@@ -101,10 +101,31 @@ impl GameScene{
         )?;
 
         let mut pieces_box = UIFlexBox::new(ctx, board_size,Vec2::<f32>::new(100.0,100.0),Vec4::<f32>::new(0.0,0.0,0.0,0.0),2)?;
+        let chess_piece_pawn = UIImage::new(
+            ctx,
+            Vec2::new(100.,300.),
+            assets.w_p.clone(), //FIXME: oof
+            Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
+        )?;
         pieces_box.children.push(Box::new(chess_piece_bishop));
         pieces_box.children.push(Box::new(chess_piece_king));
+        pieces_box.children.push(Box::new(chess_piece_pawn));
 
-        let mut flex_box= UIFlexBox::new(
+        // TODO:
+        let mut game = GameContainer::new()?;
+        for i in game.current_pieces()?.iter(){
+            if i.2 == PieceType::PAWN{
+                let piece = UIImage::new(
+                    ctx,
+                    Vec2::new((i.0 as i32*50) as f32,((7-i.1) as i32*50) as f32),
+                    assets.w_p.clone(), // FIXME: ugh, coppyyyy
+                    Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
+                )?;
+                pieces_box.children.push(Box::new(piece));
+            }
+        }
+
+        let mut flex_box = UIFlexBox::new(
             ctx, Vec2::new(400.,500.),Vec2::new(740.,100.), Vec4::<f32>::new(1.0,0.0,0.0,1.0), 3)?;
         // FIXME: dry... Assets struct?
         let text1 = Text::new("bruh", font.with_size(ctx, 16.0)?);
@@ -117,7 +138,6 @@ impl GameScene{
                 Box::new(|_:&mut _|{Transition::None})
             )?
         ));
-        let game = GameContainer::new()?;
         Ok(GameScene{
             game,
             canvas: board_canvas,
@@ -132,7 +152,6 @@ impl Scene for GameScene{
         graphics::clear(ctx, Color::rgb(unit*196.,unit*196.,unit*196.));
         self.canvas.draw(ctx,Vec2::<f32>::new(100.0,100.0)); // FIXME: DRY
         self.pieces_box.draw(ctx)?;
-        // TODO: draw pieces
         self.history_box.draw(ctx)?;
         Ok(Transition::None)
     }

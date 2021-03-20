@@ -10,23 +10,40 @@ impl GameContainer{
             history
         })
     }
+    pub fn current_pieces(&mut self)->tetra::Result<&Vec<Piece>>{
+        self.history.board_states.last_mut();
+        Ok(&self.history.board_states.last_mut().unwrap().pieces)
+    }
 }
-#[allow(dead_code)]
-struct GameHistory{
+pub struct GameHistory{
     board_states: Vec<BoardState>
 }
 impl GameHistory{
-    pub fn new_game()->tetra::Result<GameHistory>{
-        todo!()
+    fn new_game()->tetra::Result<GameHistory>{
+        let board_states = vec![BoardState::default_board()?];
+        Ok(GameHistory{
+            board_states
+        })
     }
 }
-#[allow(dead_code)]
-struct BoardState{
+pub struct BoardState{
     pieces:Vec<Piece>
 }
-struct Piece(u8,u8, PieceType, PlayerColor);
+impl BoardState{
+    fn default_board()->tetra::Result<BoardState>{
+        let mut pieces = Vec::new();
+        for i in 0..8{
+            pieces.push(Piece(i,1,PieceType::PAWN,PlayerColor::WHITE));
+        }
+        Ok(BoardState{
+            pieces
+        })
+    }
+}
+pub struct Piece(pub u8,pub u8, pub PieceType, pub PlayerColor);
 #[allow(dead_code)]
-enum PieceType{
+#[derive(PartialEq)]
+pub enum PieceType{
     PAWN,
     ROOK,
     BISHOP,
@@ -35,7 +52,8 @@ enum PieceType{
     QUEEN
 }
 #[allow(dead_code)]
-enum PlayerColor{
+#[derive(PartialEq)]
+pub enum PlayerColor{
     BLACK,
     WHITE
 }
