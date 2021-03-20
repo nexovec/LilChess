@@ -1,3 +1,4 @@
+use crate::game::GameContainer;
 use crate::Assets;
 use tetra::{graphics::Canvas, math::Vec4};
 use tetra::{Context, graphics::{Color, text::Text}, math::Vec2};
@@ -65,6 +66,7 @@ impl Scene for MenuScene{
     }
 }
 struct GameScene{
+    game:GameContainer,
     canvas: Canvas,
     history_box: UIFlexBox,
     pieces_box: UIFlexBox
@@ -115,7 +117,9 @@ impl GameScene{
                 Box::new(|_:&mut _|{Transition::None})
             )?
         ));
+        let game = GameContainer::new()?;
         Ok(GameScene{
+            game,
             canvas: board_canvas,
             history_box: flex_box,
             pieces_box
