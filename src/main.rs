@@ -1,5 +1,6 @@
-mod game;
+mod scenes;
 mod ui;
+mod game;
 use tetra::math::Vec2;
 use tetra::graphics::text::Text;
 use tetra::graphics::text::VectorFontBuilder;
@@ -7,7 +8,7 @@ use tetra::graphics::Color;
 use tetra::graphics;
 use tetra::Context;
 use tetra::graphics::Texture;
-use game::{Scene, MenuScene, Transition};
+use scenes::{Scene, MenuScene, Transition};
 use tetra::{State, window};
 
 struct GameState{

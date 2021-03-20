@@ -5,7 +5,7 @@ use std::borrow::Borrow;
 use tetra::{Context, graphics::text::Text, input::MouseButton, math::Vec2};
 // TODO: Research Vec2.as_()
 
-use crate::game::{ Scene, Transition};
+use crate::scenes::{ Scene, Transition};
 pub struct MenuButton{
     borders: Vec2<i32>,
     pos: Vec2<i32>,
