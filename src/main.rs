@@ -76,6 +76,7 @@ pub struct Assets {
     b_p: Texture,
 }
 impl Assets {
+    // TODO: fix bad piece coloring
     pub fn load_assets(ctx: &mut Context) -> tetra::Result<Assets> {
         let assets: Assets;
         {
