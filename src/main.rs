@@ -84,27 +84,35 @@ impl Assets {
             let chess_font = VectorFontBuilder::new("./res/fonts/chess_font.ttf")?;
             let square_size: i32 = 50;
             let empty = Color::rgba(0., 0., 0., 0.);
-            let mut draw_piece: Box<dyn FnMut(&str) -> tetra::Result<Texture>> =
-                Box::new(|letter: &str| {
+
+            let blacken =
+                tetra::graphics::Shader::from_fragment_file(ctx, "./res/shaders/blacken.frag")?;
+            let mut draw_piece: Box<dyn FnMut(&str, bool) -> tetra::Result<Texture>> =
+                Box::new(|letter: &str, is_black: bool| {
                     let cvs = tetra::graphics::Canvas::new(ctx, square_size, square_size)?;
                     graphics::set_canvas(ctx, &cvs);
                     graphics::clear(ctx, empty);
                     let mut text = Text::new(letter, chess_font.with_size(ctx, 48.)?);
                     text.draw(ctx, Vec2::new(0., 0.));
+                    if is_black {
+                        graphics::set_shader(ctx, &blacken);
+                        cvs.draw(ctx, Vec2::new(0., 0.));
+                        graphics::reset_shader(ctx);
+                    }
                     Ok(cvs.texture().clone())
                 });
-            let w_k = draw_piece("k")?;
-            let w_q = draw_piece("q")?;
-            let w_r = draw_piece("r")?;
-            let w_n = draw_piece("h")?;
-            let w_b = draw_piece("b")?;
-            let w_p = draw_piece("p")?;
-            let b_k = draw_piece("l")?;
-            let b_q = draw_piece("w")?;
-            let b_r = draw_piece("t")?;
-            let b_n = draw_piece("j")?;
-            let b_b = draw_piece("n")?;
-            let b_p = draw_piece("o")?;
+            let w_k = draw_piece("l", false)?;
+            let w_q = draw_piece("w", false)?;
+            let w_r = draw_piece("t", false)?;
+            let w_n = draw_piece("j", false)?;
+            let w_b = draw_piece("n", false)?;
+            let w_p = draw_piece("o", false)?;
+            let b_k = draw_piece("l", true)?;
+            let b_q = draw_piece("w", true)?;
+            let b_r = draw_piece("t", true)?;
+            let b_n = draw_piece("j", true)?;
+            let b_b = draw_piece("n", true)?;
+            let b_p = draw_piece("o", true)?;
             assets = Assets {
                 font,
                 w_k,
@@ -132,6 +140,5 @@ fn main() -> tetra::Result {
         .quit_on_escape(true)
         .show_mouse(true)
         .build()?
-        .run(|ctx| GameState::new(ctx));
-    tetra::Result::Ok(())
+        .run(|ctx| GameState::new(ctx))
 }
