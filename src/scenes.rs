@@ -93,18 +93,6 @@ impl GameScene {
         graphics::reset_canvas(ctx);
         graphics::reset_shader(ctx);
         // TODO: chessboard and pieces into one UIFlexBox
-        // let chess_piece_king = UIImage::new(
-        //     ctx,
-        //     Vec2::new(0.,0.),
-        //     assets.w_k,
-        //     Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
-        // )?;
-        // let chess_piece_bishop = UIImage::new(
-        //     ctx,
-        //     Vec2::new(50.,0.),
-        //     assets.w_b,
-        //     Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
-        // )?;
 
         let mut pieces_box = UIFlexBox::new(
             ctx,
@@ -179,7 +167,7 @@ impl Scene for GameScene {
     fn draw(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
         let unit = 1.0 / 255.;
         graphics::clear(ctx, Color::rgb(unit * 196., unit * 196., unit * 196.));
-        self.canvas.draw(ctx, Vec2::<f32>::new(100.0, 100.0)); // FIXME: DRY
+        self.canvas.draw(ctx, Vec2::<f32>::new(100.0, 100.0));
         self.pieces_box.draw(ctx)?;
         self.history_box.draw(ctx)?;
         Ok(Transition::None)
