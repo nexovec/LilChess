@@ -90,7 +90,8 @@ impl Assets {
                 tetra::graphics::Shader::from_fragment_file(ctx, "./res/shaders/blacken.frag")?;
             let mut draw_piece: Box<dyn FnMut(&str, bool) -> tetra::Result<Texture>> =
                 Box::new(|letter: &str, is_black: bool| {
-                    let cvs = tetra::graphics::Canvas::new(ctx, square_size as i32, square_size as i32)?;
+                    let cvs =
+                        tetra::graphics::Canvas::new(ctx, square_size as i32, square_size as i32)?;
                     graphics::set_canvas(ctx, &cvs);
                     graphics::clear(ctx, empty);
                     let mut text = Text::new(letter, chess_font.with_size(ctx, 48.)?);
@@ -117,8 +118,13 @@ impl Assets {
 
             std::mem::drop(draw_piece);
             tetra::graphics::reset_canvas(ctx);
-            let data = std::iter::repeat(&[(0.1*255.) as u8,(0.8*255.) as u8,(0.1*255.) as u8,(0.8*255.) as u8])
-            .take(square_size*square_size)
+            let data = std::iter::repeat(&[
+                (0.1 * 255.) as u8,
+                (0.8 * 255.) as u8,
+                (0.1 * 255.) as u8,
+                (0.8 * 255.) as u8,
+            ])
+            .take(square_size * square_size)
             .flatten()
             .copied()
             .collect::<Vec<u8>>();
