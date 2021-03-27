@@ -62,6 +62,7 @@ impl State for GameState {
 #[allow(dead_code)]
 pub struct Assets {
     font: VectorFontBuilder,
+    green_square: Texture,
     w_k: Texture,
     w_q: Texture,
     w_r: Texture,
@@ -82,14 +83,14 @@ impl Assets {
         {
             let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?;
             let chess_font = VectorFontBuilder::new("./res/fonts/chess_font.ttf")?;
-            let square_size: i32 = 50;
+            let square_size: usize = 50;
             let empty = Color::rgba(0., 0., 0., 0.);
 
             let blacken =
                 tetra::graphics::Shader::from_fragment_file(ctx, "./res/shaders/blacken.frag")?;
             let mut draw_piece: Box<dyn FnMut(&str, bool) -> tetra::Result<Texture>> =
                 Box::new(|letter: &str, is_black: bool| {
-                    let cvs = tetra::graphics::Canvas::new(ctx, square_size, square_size)?;
+                    let cvs = tetra::graphics::Canvas::new(ctx, square_size as i32, square_size as i32)?;
                     graphics::set_canvas(ctx, &cvs);
                     graphics::clear(ctx, empty);
                     let mut text = Text::new(letter, chess_font.with_size(ctx, 48.)?);
@@ -113,8 +114,18 @@ impl Assets {
             let b_n = draw_piece("j", true)?;
             let b_b = draw_piece("n", true)?;
             let b_p = draw_piece("o", true)?;
+
+            std::mem::drop(draw_piece);
+            tetra::graphics::reset_canvas(ctx);
+            let data = std::iter::repeat(&[(0.1*255.) as u8,(0.8*255.) as u8,(0.1*255.) as u8,(0.8*255.) as u8])
+            .take(square_size*square_size)
+            .flatten()
+            .copied()
+            .collect::<Vec<u8>>();
+            let green_square = Texture::from_rgba(ctx, 50, 50, &data)?;
             assets = Assets {
                 font,
+                green_square,
                 w_k,
                 w_q,
                 w_r,
@@ -129,7 +140,6 @@ impl Assets {
                 b_p,
             };
         }
-        tetra::graphics::reset_canvas(ctx);
         Ok(assets)
     }
 }

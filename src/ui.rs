@@ -79,12 +79,12 @@ trait UIMouseInteractiveRect {
 }
 #[allow(dead_code)]
 pub struct UIFlexBox {
-    pos: Vec2<f32>,
-    size: Vec2<f32>,
+    pub pos: Vec2<f32>,
+    pub size: Vec2<f32>,
     border_width: i32,
     pub children: Vec<Box<dyn Scene>>,
     texture: Texture,
-    canvas: Canvas,
+    pub canvas: Canvas,
 }
 impl UIFlexBox {
     pub fn new(

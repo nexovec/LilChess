@@ -1,3 +1,6 @@
+use tetra::math::Vec2;
+use crate::Scene;
+
 pub struct GameContainer {
     history: GameHistory, // data
 }
@@ -7,9 +10,17 @@ impl GameContainer {
         let history = GameHistory::new_game()?;
         Ok(GameContainer { history })
     }
-    pub fn current_pieces(&mut self) -> tetra::Result<&Vec<Piece>> {
+    pub fn current_pieces(&mut self) -> &Vec<Piece> {
         self.history.board_states.last_mut();
-        Ok(&self.history.board_states.last_mut().unwrap().pieces)
+        &self.history.board_states.last_mut().unwrap().pieces
+    }
+    pub fn get_piece_at(&mut self, pos: Vec2<u8>)->Option<Piece>{
+        let list = self.current_pieces();
+        // FIXME: not done
+        Some(Piece(pos.x,pos.y, PieceType::PAWN, PlayerColor::WHITE))
+    }
+    pub fn get_legal_moves(&mut self, p: Piece){
+        todo!()
     }
 }
 pub struct GameHistory {
