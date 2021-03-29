@@ -17,7 +17,13 @@ impl GameContainer {
     pub fn get_piece_at(&mut self, pos: Vec2<u8>) -> Option<Piece> {
         let list = self.current_pieces();
         // FIXME: not done
-        Some(Piece(pos.x, pos.y, PieceType::PAWN, PlayerColor::WHITE))
+        for l in list {
+            if l.0 == pos.x && l.1 == pos.y {
+                return Some(*l);
+            }
+        }
+        // Some(Piece(pos.x, pos.y, PieceType::PAWN, PlayerColor::WHITE))
+        None
     }
     pub fn get_legal_moves(&mut self, p: Piece) -> Vec<Piece> {
         // TODO:
@@ -74,8 +80,9 @@ impl BoardState {
         Ok(BoardState { pieces })
     }
 }
+#[derive(Clone, Copy)]
 pub struct Piece(pub u8, pub u8, pub PieceType, pub PlayerColor);
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum PieceType {
     PAWN,
     ROOK,
@@ -84,7 +91,7 @@ pub enum PieceType {
     KING,
     QUEEN,
 }
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum PlayerColor {
     BLACK,
     WHITE,

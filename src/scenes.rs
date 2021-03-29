@@ -208,7 +208,6 @@ impl Scene for GameScene {
         match self.get_selected_square(ctx) {
             Some(i) => match self.game.get_piece_at(Vec2::new(i.x, i.y)) {
                 Some(p) => {
-                    // FIXME: don't redraw every frame
                     graphics::set_canvas(ctx, &self.notes_box.canvas);
                     let moves = self.game.get_legal_moves(p);
                     graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
