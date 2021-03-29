@@ -14,29 +14,79 @@ impl GameContainer {
         self.history.board_states.last_mut();
         &self.history.board_states.last_mut().unwrap().pieces
     }
-    pub fn get_piece_at(&mut self, pos: Vec2<u8>) -> Option<Piece> {
+    pub fn get_piece_at(&mut self, pos: Vec2<i8>) -> Option<Piece> {
         let list = self.current_pieces();
-        // FIXME: not done
         for l in list {
             if l.0 == pos.x && l.1 == pos.y {
                 return Some(*l);
             }
         }
-        // Some(Piece(pos.x, pos.y, PieceType::PAWN, PlayerColor::WHITE))
         None
     }
     pub fn get_legal_moves(&mut self, p: Piece) -> Vec<Piece> {
         // TODO:
         let pcs = self.current_pieces();
+        let check_move = |p: Vec2<i8>| -> bool {
+            if p.x >= 8 || p.y >= 8 || p.x < 0 || p.y < 0 {
+                return false;
+            }
+            for piece in pcs {
+                if piece.0 == p.x && piece.1 == p.y {
+                    // DEBUG:
+                    println!("I'm returning false");
+                    return false;
+                } else {
+                    println!("valid move: {:?}", p);
+                }
+            }
+            true
+        };
+        let mut moves = Vec::<Piece>::new();
         match p.2 {
-            PieceType::BISHOP => {}
+            PieceType::BISHOP => {
+                // DEBUG:
+                println!("I should print when bishop is clicked");
+                for i in 1..8 {
+                    let pos = Vec2::<i8>::new(p.0 + i, p.1 + i);
+                    if !check_move(pos) {
+                        break;
+                    } else {
+                        moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::<i8>::new(p.0 + i, p.1 - i);
+                    if !check_move(pos) {
+                        break;
+                    } else {
+                        moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::<i8>::new(p.0 - i, p.1 + i);
+                    if !check_move(pos) {
+                        break;
+                    } else {
+                        moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::<i8>::new(p.0 - i, p.1 - i);
+                    if !check_move(pos) {
+                        break;
+                    } else {
+                        moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
+                    }
+                }
+            }
             PieceType::KNIGHT => {}
             PieceType::KING => {}
             PieceType::QUEEN => {}
             PieceType::ROOK => {}
             PieceType::PAWN => {}
         }
-        vec![Piece(5, 3, PieceType::PAWN, PlayerColor::WHITE)]
+        // moves.push(Piece(5, 3, PieceType::PAWN, PlayerColor::WHITE)); // this works, but the rest doesn't??
+        moves
     }
 }
 pub struct GameHistory {
@@ -62,6 +112,8 @@ impl BoardState {
         p(Piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
         p(Piece(2, 0, PieceType::BISHOP, PlayerColor::WHITE));
         p(Piece(5, 0, PieceType::BISHOP, PlayerColor::WHITE));
+        // DEBUG:
+        p(Piece(4, 4, PieceType::BISHOP, PlayerColor::WHITE));
         p(Piece(1, 0, PieceType::KNIGHT, PlayerColor::WHITE));
         p(Piece(6, 0, PieceType::KNIGHT, PlayerColor::WHITE));
         p(Piece(4, 0, PieceType::KING, PlayerColor::WHITE));
@@ -81,7 +133,7 @@ impl BoardState {
     }
 }
 #[derive(Clone, Copy)]
-pub struct Piece(pub u8, pub u8, pub PieceType, pub PlayerColor);
+pub struct Piece(pub i8, pub i8, pub PieceType, pub PlayerColor);
 #[derive(PartialEq, Clone, Copy)]
 pub enum PieceType {
     PAWN,

@@ -178,16 +178,16 @@ impl GameScene {
         let mp = tetra::input::get_mouse_position(ctx);
         mp.x >= pos.x && mp.x < pos.x + size.x && mp.y >= pos.y && mp.y < pos.y + size.y
     }
-    fn get_selected_square(&mut self, ctx: &mut Context) -> Option<Vec2<u8>> {
+    fn get_selected_square(&mut self, ctx: &mut Context) -> Option<Vec2<i8>> {
         if tetra::input::is_mouse_button_pressed(ctx, tetra::input::MouseButton::Left) {
             if self.is_hovered(ctx, &self.pieces_box.pos.as_(), self.pieces_box.size.as_()) {
                 let mp = tetra::input::get_mouse_position(ctx);
                 let x = mp.x - self.pieces_box.pos.x;
-                let y = mp.y - self.pieces_box.pos.y;
+                let y = self.pieces_box.pos.y + self.pieces_box.size.y - mp.y;
                 if x > 400. || y > 400. {
                     return None;
                 }
-                return Some(Vec2::<u8>::new((x / 50.) as u8, (y / 50.) as u8));
+                return Some(Vec2::<i8>::new((x / 50.) as i8, (y / 50.) as i8));
             }
         }
         None
@@ -212,9 +212,10 @@ impl Scene for GameScene {
                     let moves = self.game.get_legal_moves(p);
                     graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
                     for i in moves {
-                        self.assets
-                            .green_square
-                            .draw(ctx, Vec2::new(50 * i.0 as u32, 400 - 50 * i.1 as u32).as_());
+                        self.assets.green_square.draw(
+                            ctx,
+                            Vec2::new(50 * i.0 as u32, 400 - 50 * (i.1 + 1) as u32).as_(),
+                        );
                     }
                     graphics::reset_canvas(ctx);
                 }
