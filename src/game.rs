@@ -46,14 +46,20 @@ impl GameContainer {
     pub fn get_legal_moves(&mut self, p: Piece) -> Vec<Piece> {
         // FIXME: detect illegal positions
         // TODO: make this a separate method
-        let pcs = self.current_pieces();
-        let check_move = |p: Vec2<i8>| -> bool {
+        let pcs = self.current_pieces().clone();
+        let check_boundaries = |p: Vec2<i8>| {
             // TODO: cache
             if p.x >= 8 || p.y >= 8 || p.x < 0 || p.y < 0 {
                 return false;
             }
+            true
+        };
+        let check_move = |p: Vec2<i8>| -> bool {
             // TODO: use 2D array to precompute unoccupied squares
-            for piece in pcs {
+            if !check_boundaries(p) {
+                return false;
+            }
+            for piece in pcs.clone() {
                 if piece.0 == p.x && piece.1 == p.y {
                     return false;
                 }
@@ -61,12 +67,20 @@ impl GameContainer {
             true
         };
         let mut moves = Vec::<Piece>::new();
-        // FIXME: taking pieces doesn't work
         match p.2 {
+            // TODO: abstract
             PieceType::BISHOP => {
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.0 + i, p.1 + i);
                     if !check_move(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(i) => {
+                                if i.3 != p.3 {
+                                    moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
+                                }
+                            }
+                            None => {}
+                        }
                         break;
                     } else {
                         moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
@@ -75,6 +89,14 @@ impl GameContainer {
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.0 + i, p.1 - i);
                     if !check_move(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(i) => {
+                                if i.3 != p.3 {
+                                    moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
+                                }
+                            }
+                            None => {}
+                        }
                         break;
                     } else {
                         moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
@@ -83,6 +105,14 @@ impl GameContainer {
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.0 - i, p.1 + i);
                     if !check_move(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(i) => {
+                                if i.3 != p.3 {
+                                    moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
+                                }
+                            }
+                            None => {}
+                        }
                         break;
                     } else {
                         moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
@@ -91,6 +121,14 @@ impl GameContainer {
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.0 - i, p.1 - i);
                     if !check_move(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(i) => {
+                                if i.3 != p.3 {
+                                    moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
+                                }
+                            }
+                            None => {}
+                        }
                         break;
                     } else {
                         moves.push(Piece(pos.x, pos.y, PieceType::BISHOP, p.3));
@@ -108,13 +146,21 @@ impl GameContainer {
                     Vec2::new(p.0 + 1, p.1 - 2),
                 ];
                 for pos in positions {
-                    if check_move(pos) {
+                    if check_boundaries(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(i) => {
+                                if i.3 == p.3 {
+                                    continue;
+                                }
+                            }
+                            None => {}
+                        }
                         moves.push(Piece(pos.x, pos.y, PieceType::KNIGHT, p.3));
                     }
                 }
             }
             PieceType::KING => {
-                // FIXME: king can't go into check
+                // TODO: castles
                 let positions = vec![
                     Vec2::new(p.0, p.1 + 1),
                     Vec2::new(p.0, p.1 - 1),
@@ -126,6 +172,7 @@ impl GameContainer {
                     Vec2::new(p.0 - 1, p.1),
                 ];
                 // FIXME: what if it is check??
+                // FIXME: checks are messed up
                 if self.isnt_check(p) {
                     for pos in positions {
                         if self.isnt_check(Piece(pos.x, pos.y, PieceType::KING, p.3)) {
@@ -135,33 +182,62 @@ impl GameContainer {
                 }
             }
             PieceType::ROOK => {
+                // TODO: abstract
                 for i in 1..8 {
                     let pos = Vec2::new(p.0 + i, p.1);
-                    if !check_move(pos) {
-                        break;
+                    if check_boundaries(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(piece) => {
+                                if piece.3 != p.3 {
+                                    moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3));
+                                }
+                                break;
+                            }
+                            None => moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3)),
+                        }
                     }
-                    moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3));
                 }
                 for i in 1..8 {
                     let pos = Vec2::new(p.0 - i, p.1);
-                    if !check_move(pos) {
-                        break;
+                    if check_boundaries(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(piece) => {
+                                if piece.3 != p.3 {
+                                    moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3));
+                                }
+                                break;
+                            }
+                            None => moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3)),
+                        }
                     }
-                    moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3));
                 }
                 for i in 1..8 {
                     let pos = Vec2::new(p.0, p.1 + i);
-                    if !check_move(pos) {
-                        break;
+                    if check_boundaries(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(piece) => {
+                                if piece.3 != p.3 {
+                                    moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3));
+                                }
+                                break;
+                            }
+                            None => moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3)),
+                        }
                     }
-                    moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3));
                 }
                 for i in 1..8 {
                     let pos = Vec2::new(p.0, p.1 - i);
-                    if !check_move(pos) {
-                        break;
+                    if check_boundaries(pos) {
+                        match self.get_piece_at(pos) {
+                            Some(piece) => {
+                                if piece.3 != p.3 {
+                                    moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3));
+                                }
+                                break;
+                            }
+                            None => moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3)),
+                        }
                     }
-                    moves.push(Piece(pos.x, pos.y, PieceType::ROOK, p.3));
                 }
             }
             PieceType::QUEEN => {
@@ -178,14 +254,78 @@ impl GameContainer {
                 }
             }
             PieceType::PAWN => {
-                if (p.1 == 1 && p.3 == PlayerColor::WHITE)
-                    || (p.1 == 6 && p.3 == PlayerColor::BLACK)
-                {
-                    // TODO: en passant
-                }
+                // TODO: en passant
                 // TODO: promotions
-                // TODO: taking
-                moves.push(Piece(p.0, p.1 + 1, p.2, p.3));
+                // taking
+                match p.3 {
+                    PlayerColor::WHITE => match self.get_piece_at(Vec2::new(p.0 - 1, p.1 + 1)) {
+                        None => {}
+                        Some(i) => {
+                            if i.3 != p.3 {
+                                moves.push(Piece(p.0 - 1, p.1 + 1, PieceType::PAWN, p.3));
+                            }
+                        }
+                    },
+                    PlayerColor::BLACK => match self.get_piece_at(Vec2::new(p.0 - 1, p.1 - 1)) {
+                        None => {}
+                        Some(i) => {
+                            if i.3 != p.3 {
+                                moves.push(Piece(p.0 - 1, p.1 - 1, PieceType::PAWN, p.3));
+                            }
+                        }
+                    },
+                }
+                match p.3 {
+                    PlayerColor::WHITE => match self.get_piece_at(Vec2::new(p.0 + 1, p.1 + 1)) {
+                        None => {}
+                        Some(i) => {
+                            if i.3 != p.3 {
+                                moves.push(Piece(p.0 + 1, p.1 + 1, PieceType::PAWN, p.3));
+                            }
+                        }
+                    },
+                    PlayerColor::BLACK => match self.get_piece_at(Vec2::new(p.0 + 1, p.1 - 1)) {
+                        None => {}
+                        Some(i) => {
+                            if i.3 != p.3 {
+                                moves.push(Piece(p.0 + 1, p.1 - 1, PieceType::PAWN, p.3));
+                            }
+                        }
+                    },
+                }
+                // normal move
+                match p.3 {
+                    PlayerColor::WHITE => {
+                        match self.get_piece_at(Vec2::new(p.0, p.1 + 1)) {
+                            None => {
+                                moves.push(Piece(p.0, p.1 + 1, p.2, p.3));
+                                // double step
+                                if p.1 == 1 {
+                                    match self.get_piece_at(Vec2::new(p.0, p.1 + 2)) {
+                                        Some(_) => {}
+                                        None => {
+                                            moves.push(Piece(p.0, p.1 + 2, PieceType::PAWN, p.3))
+                                        }
+                                    }
+                                }
+                            }
+                            Some(_) => {}
+                        }
+                    }
+                    PlayerColor::BLACK => match self.get_piece_at(Vec2::new(p.0, p.1 - 1)) {
+                        None => {
+                            moves.push(Piece(p.0, p.1 - 1, p.2, p.3));
+                            // double step
+                            if p.1 == 6 {
+                                match self.get_piece_at(Vec2::new(p.0, p.1 - 2)) {
+                                    Some(_) => {}
+                                    None => moves.push(Piece(p.0, p.1 - 2, PieceType::PAWN, p.3)),
+                                }
+                            }
+                        }
+                        Some(_) => {}
+                    },
+                }
             }
         }
         moves
@@ -215,7 +355,7 @@ impl BoardState {
         p(Piece(2, 0, PieceType::BISHOP, PlayerColor::WHITE));
         p(Piece(5, 0, PieceType::BISHOP, PlayerColor::WHITE));
         // DEBUG:
-        p(Piece(4, 4, PieceType::BISHOP, PlayerColor::WHITE));
+        p(Piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
         // DEBUG:
         p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
         // DEBUG:

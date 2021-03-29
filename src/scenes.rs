@@ -198,8 +198,8 @@ impl Scene for GameScene {
         let unit = 1.0 / 255.;
         graphics::clear(ctx, Color::rgb(unit * 196., unit * 196., unit * 196.));
         self.canvas.draw(ctx, Vec2::<f32>::new(100.0, 100.0));
-        self.pieces_box.draw(ctx)?;
         self.notes_box.draw(ctx)?;
+        self.pieces_box.draw(ctx)?;
         self.history_box.draw(ctx)?;
         Ok(Transition::None)
     }
@@ -214,7 +214,7 @@ impl Scene for GameScene {
                     for i in moves {
                         self.assets.green_square.draw(
                             ctx,
-                            Vec2::new(50 * i.0 as u32, 400 - 50 * (i.1 + 1) as u32).as_(),
+                            Vec2::new(50 * i.0 as i32, 400 - 50 * (i.1 + 1) as i32).as_(),
                         );
                     }
                     graphics::reset_canvas(ctx);
