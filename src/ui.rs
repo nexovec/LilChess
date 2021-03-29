@@ -100,7 +100,7 @@ impl UIFlexBox {
         graphics::set_shader(ctx, &sh);
 
         sh.set_uniform(ctx, "border_width", border_width);
-        sh.set_uniform(ctx, "viewport", size); // FIXME: magic numbers
+        sh.set_uniform(ctx, "viewport", size);
         sh.set_uniform(ctx, "border_color", border_color);
         canvas.draw(ctx, Vec2::new(0., 0.));
 

@@ -71,6 +71,7 @@ impl Scene for MenuScene {
     }
 }
 struct GameScene {
+    assets: Assets,
     game: GameContainer,
     canvas: Canvas,
     history_box: UIFlexBox,
@@ -164,6 +165,7 @@ impl GameScene {
             Box::new(|_: &mut _| Transition::None),
         )?));
         Ok(GameScene {
+            assets,
             game,
             canvas: board_canvas,
             history_box: flex_box,
@@ -206,12 +208,22 @@ impl Scene for GameScene {
         match self.get_selected_square(ctx) {
             Some(i) => match self.game.get_piece_at(Vec2::new(i.x, i.y)) {
                 Some(p) => {
+                    // FIXME: don't redraw every frame
                     graphics::set_canvas(ctx, &self.notes_box.canvas);
-                    self.game.get_legal_moves(p);
-                    todo!();
+                    let moves = self.game.get_legal_moves(p);
+                    graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
+                    for i in moves {
+                        self.assets
+                            .green_square
+                            .draw(ctx, Vec2::new(50 * i.0 as u32, 400 - 50 * i.1 as u32).as_());
+                    }
                     graphics::reset_canvas(ctx);
                 }
-                None => {}
+                None => {
+                    graphics::set_canvas(ctx, &self.notes_box.canvas);
+                    graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
+                    graphics::reset_canvas(ctx);
+                }
             },
             None => {}
         }
