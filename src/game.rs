@@ -24,6 +24,7 @@ impl GameContainer {
         None
     }
     fn isnt_check(&mut self, p: Piece) -> bool {
+        // FIXME: cloning here is stupid
         let pcs = self.current_pieces().clone();
         // TODO: use 2D array to precompute attacked squares
         let mut legal_moves = Vec::<Piece>::new();
@@ -175,8 +176,9 @@ impl GameContainer {
                 // FIXME: checks are messed up
                 if self.isnt_check(p) {
                     for pos in positions {
-                        if self.isnt_check(Piece(pos.x, pos.y, PieceType::KING, p.3)) {
-                            moves.push(Piece(pos.x, pos.y, PieceType::KING, p.3));
+                        let temp = Piece(pos.x, pos.y, PieceType::KING, p.3);
+                        if check_move(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp) {
+                            moves.push(temp);
                         }
                     }
                 }
@@ -359,7 +361,7 @@ impl BoardState {
         // DEBUG:
         p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
         // DEBUG:
-        p(Piece(6, 4, PieceType::KING, PlayerColor::WHITE));
+        p(Piece(7, 4, PieceType::KING, PlayerColor::WHITE));
         // DEBUG:
         p(Piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
         // DEBUG:

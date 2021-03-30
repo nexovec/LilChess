@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use tetra::graphics;
+use tetra::graphics::Color;
 use tetra::{
     graphics::{Canvas, Shader, Texture},
     math::Vec4,
@@ -98,12 +99,10 @@ impl UIFlexBox {
         let sh: Shader = Shader::from_fragment_file(ctx, "./res/shaders/box_border.frag")?;
         graphics::set_canvas(ctx, &canvas);
         graphics::set_shader(ctx, &sh);
-
         sh.set_uniform(ctx, "border_width", border_width);
         sh.set_uniform(ctx, "viewport", size);
         sh.set_uniform(ctx, "border_color", border_color);
         canvas.draw(ctx, Vec2::new(0., 0.));
-
         graphics::reset_canvas(ctx);
         graphics::reset_shader(ctx);
 

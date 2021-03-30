@@ -122,7 +122,7 @@ impl Assets {
                 (0.1 * 255.) as u8,
                 (0.8 * 255.) as u8,
                 (0.1 * 255.) as u8,
-                (0.5 * 255.) as u8,
+                (0.8 * 255.) as u8,
             ])
             .take(square_size * square_size)
             .flatten()
