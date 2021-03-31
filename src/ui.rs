@@ -1,6 +1,5 @@
 use std::borrow::Borrow;
 use tetra::graphics;
-use tetra::graphics::Color;
 use tetra::{
     graphics::{Canvas, Shader, Texture},
     math::Vec4,

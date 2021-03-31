@@ -1,4 +1,3 @@
-use crate::Scene;
 use tetra::math::Vec2;
 
 pub struct GameContainer {
@@ -30,9 +29,8 @@ impl GameContainer {
         let mut legal_moves = Vec::<Piece>::new();
         for piece in pcs {
             if p.3 == piece.3 {
-                // FIXME: king gets ignored, else stack overflow
-            }
-            else if piece.2 == PieceType::KING{
+                // NOTE: check_move() is run later, so you can't take your pieces
+            } else if piece.2 == PieceType::KING {
                 // FIXME: duplicate code
                 // FIXME: lets you take your own pieces with king??
                 let positions = vec![
@@ -43,24 +41,30 @@ impl GameContainer {
                     Vec2::new(piece.0 - 1, piece.1 + 1),
                     Vec2::new(piece.0 - 1, piece.1 - 1),
                     Vec2::new(piece.0 + 1, piece.1),
-                    Vec2::new(piece.0 - 1, piece.1)
+                    Vec2::new(piece.0 - 1, piece.1),
                 ];
-                for pos in positions{
-                    legal_moves.push(Piece(pos.x,pos.y, PieceType::KING,
-                    if p.3 == PlayerColor::WHITE {PlayerColor::BLACK} else{PlayerColor::WHITE}));
+                for pos in positions {
+                    legal_moves.push(Piece(
+                        pos.x,
+                        pos.y,
+                        PieceType::KING,
+                        if p.3 == PlayerColor::WHITE {
+                            PlayerColor::BLACK
+                        } else {
+                            PlayerColor::BLACK
+                        },
+                    ));
                 }
-            }
-            else if piece.2 == PieceType::PAWN{
+            } else if piece.2 == PieceType::PAWN {
                 // TODO: boundary_check(attack moves)
                 // FIXME: ignores pawns
-            }
-            else{
+            } else {
                 // FIXME: needs to account for pawn double moves
                 legal_moves.append(&mut self.get_legal_moves(piece));
             }
         }
         for mv in legal_moves {
-            if self.check_move(Vec2::new(mv.0,mv.1)) {
+            if self.check_move(Vec2::new(mv.0, mv.1)) {
                 return false;
             }
         }
@@ -75,6 +79,7 @@ impl GameContainer {
     }
     /*
     checks whether a square is occupied or isn't on the chessboard
+    @return true means the square with given coordinates are plausible
     */
     fn check_move(&mut self, p: Vec2<i8>) -> bool {
         // TODO: use 2D array to precompute unoccupied squares
@@ -210,7 +215,7 @@ impl GameContainer {
                 }
             }
             PieceType::ROOK => {
-                // TODO: abstract
+                // TODO: abstract, simplify
                 for i in 1..8 {
                     let pos = Vec2::new(p.0 + i, p.1);
                     if self.check_boundaries(pos) {
@@ -373,8 +378,7 @@ pub struct BoardState {
     pieces: Vec<Piece>,
 }
 impl BoardState {
-    fn test_board_1()->tetra::Result<BoardState>{
-        // FIXME: code duplication
+    fn test_board_1() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
         // DEBUG:
@@ -389,6 +393,7 @@ impl BoardState {
         p(Piece(3, 2, PieceType::QUEEN, PlayerColor::WHITE));
         Ok(BoardState { pieces })
     }
+    #[allow(dead_code)]
     fn default_board() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);

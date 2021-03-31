@@ -141,7 +141,7 @@ impl GameScene {
         for i in game.current_pieces().iter() {
             pieces_box.children.push(Box::new(get_image(i)?));
         }
-        let mut notes_box = UIFlexBox::new(
+        let notes_box = UIFlexBox::new(
             ctx,
             board_size,
             Vec2::<f32>::new(100.0, 100.0),
