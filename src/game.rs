@@ -29,15 +29,62 @@ impl GameContainer {
         // TODO: use 2D array to precompute attacked squares
         let mut legal_moves = Vec::<Piece>::new();
         for piece in pcs {
-            if piece.2 == PieceType::KING || p.3 == piece.3 {
+            if p.3 == piece.3 {
                 // FIXME: king gets ignored, else stack overflow
-            } else {
+            }
+            else if piece.2 == PieceType::KING{
+                // FIXME: duplicate code
+                // FIXME: lets you take your own pieces with king??
+                let positions = vec![
+                    Vec2::new(piece.0, piece.1 + 1),
+                    Vec2::new(piece.0, piece.1 - 1),
+                    Vec2::new(piece.0 + 1, piece.1 - 1),
+                    Vec2::new(piece.0 + 1, piece.1 + 1),
+                    Vec2::new(piece.0 - 1, piece.1 + 1),
+                    Vec2::new(piece.0 - 1, piece.1 - 1),
+                    Vec2::new(piece.0 + 1, piece.1),
+                    Vec2::new(piece.0 - 1, piece.1)
+                ];
+                for pos in positions{
+                    legal_moves.push(Piece(pos.x,pos.y, PieceType::KING,
+                    if p.3 == PlayerColor::WHITE {PlayerColor::BLACK} else{PlayerColor::WHITE}));
+                }
+            }
+            else if piece.2 == PieceType::PAWN{
+                // TODO: boundary_check(attack moves)
+                // FIXME: ignores pawns
+            }
+            else{
                 // FIXME: needs to account for pawn double moves
                 legal_moves.append(&mut self.get_legal_moves(piece));
             }
         }
         for mv in legal_moves {
-            if mv.0 == p.0 && mv.1 == p.1 {
+            if self.check_move(Vec2::new(mv.0,mv.1)) {
+                return false;
+            }
+        }
+        true
+    }
+    fn check_boundaries(&mut self, p: Vec2<i8>) -> bool {
+        // TODO: cache
+        if p.x >= 8 || p.y >= 8 || p.x < 0 || p.y < 0 {
+            return false;
+        }
+        true
+    }
+    /*
+    checks whether a square is occupied or isn't on the chessboard
+    */
+    fn check_move(&mut self, p: Vec2<i8>) -> bool {
+        // TODO: use 2D array to precompute unoccupied squares
+        // FIXME: retarded clone() usage
+        let pcs = self.current_pieces().clone();
+        if !self.check_boundaries(p) {
+            return false;
+        }
+        for piece in pcs.clone() {
+            if piece.0 == p.x && piece.1 == p.y {
                 return false;
             }
         }
@@ -45,34 +92,13 @@ impl GameContainer {
     }
     pub fn get_legal_moves(&mut self, p: Piece) -> Vec<Piece> {
         // FIXME: detect illegal positions
-        // TODO: make this a separate method
-        let pcs = self.current_pieces().clone();
-        let check_boundaries = |p: Vec2<i8>| {
-            // TODO: cache
-            if p.x >= 8 || p.y >= 8 || p.x < 0 || p.y < 0 {
-                return false;
-            }
-            true
-        };
-        let check_move = |p: Vec2<i8>| -> bool {
-            // TODO: use 2D array to precompute unoccupied squares
-            if !check_boundaries(p) {
-                return false;
-            }
-            for piece in pcs.clone() {
-                if piece.0 == p.x && piece.1 == p.y {
-                    return false;
-                }
-            }
-            true
-        };
         let mut moves = Vec::<Piece>::new();
         match p.2 {
             // TODO: abstract
             PieceType::BISHOP => {
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.0 + i, p.1 + i);
-                    if !check_move(pos) {
+                    if !self.check_move(pos) {
                         match self.get_piece_at(pos) {
                             Some(i) => {
                                 if i.3 != p.3 {
@@ -88,7 +114,7 @@ impl GameContainer {
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.0 + i, p.1 - i);
-                    if !check_move(pos) {
+                    if !self.check_move(pos) {
                         match self.get_piece_at(pos) {
                             Some(i) => {
                                 if i.3 != p.3 {
@@ -104,7 +130,7 @@ impl GameContainer {
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.0 - i, p.1 + i);
-                    if !check_move(pos) {
+                    if !self.check_move(pos) {
                         match self.get_piece_at(pos) {
                             Some(i) => {
                                 if i.3 != p.3 {
@@ -120,7 +146,7 @@ impl GameContainer {
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.0 - i, p.1 - i);
-                    if !check_move(pos) {
+                    if !self.check_move(pos) {
                         match self.get_piece_at(pos) {
                             Some(i) => {
                                 if i.3 != p.3 {
@@ -146,7 +172,7 @@ impl GameContainer {
                     Vec2::new(p.0 + 1, p.1 - 2),
                 ];
                 for pos in positions {
-                    if check_boundaries(pos) {
+                    if self.check_boundaries(pos) {
                         match self.get_piece_at(pos) {
                             Some(i) => {
                                 if i.3 == p.3 {
@@ -174,23 +200,20 @@ impl GameContainer {
                 // FIXME: what if it is check??
                 // FIXME: checks are messed up
                 if self.isnt_check(p) {
-                    // println!("King isn't in check");`
                     for pos in positions {
                         let temp = Piece(pos.x, pos.y, PieceType::KING, p.3);
-                        if check_boundaries(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp) {
+                        if self.check_boundaries(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp)
+                        {
                             moves.push(temp);
                         }
                     }
                 }
-                // else{
-                //     println!("King is in check!");
-                // }
             }
             PieceType::ROOK => {
                 // TODO: abstract
                 for i in 1..8 {
                     let pos = Vec2::new(p.0 + i, p.1);
-                    if check_boundaries(pos) {
+                    if self.check_boundaries(pos) {
                         match self.get_piece_at(pos) {
                             Some(piece) => {
                                 if piece.3 != p.3 {
@@ -204,7 +227,7 @@ impl GameContainer {
                 }
                 for i in 1..8 {
                     let pos = Vec2::new(p.0 - i, p.1);
-                    if check_boundaries(pos) {
+                    if self.check_boundaries(pos) {
                         match self.get_piece_at(pos) {
                             Some(piece) => {
                                 if piece.3 != p.3 {
@@ -218,7 +241,7 @@ impl GameContainer {
                 }
                 for i in 1..8 {
                     let pos = Vec2::new(p.0, p.1 + i);
-                    if check_boundaries(pos) {
+                    if self.check_boundaries(pos) {
                         match self.get_piece_at(pos) {
                             Some(piece) => {
                                 if piece.3 != p.3 {
@@ -232,7 +255,7 @@ impl GameContainer {
                 }
                 for i in 1..8 {
                     let pos = Vec2::new(p.0, p.1 - i);
-                    if check_boundaries(pos) {
+                    if self.check_boundaries(pos) {
                         match self.get_piece_at(pos) {
                             Some(piece) => {
                                 if piece.3 != p.3 {
@@ -341,7 +364,8 @@ pub struct GameHistory {
 }
 impl GameHistory {
     fn new_game() -> tetra::Result<GameHistory> {
-        let board_states = vec![BoardState::default_board()?];
+        // let board_states = vec![BoardState::default_board()?];
+        let board_states = vec![BoardState::test_board_1()?];
         Ok(GameHistory { board_states })
     }
 }
@@ -349,16 +373,10 @@ pub struct BoardState {
     pieces: Vec<Piece>,
 }
 impl BoardState {
-    fn default_board() -> tetra::Result<BoardState> {
+    fn test_board_1()->tetra::Result<BoardState>{
+        // FIXME: code duplication
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
-        for i in 0..8 {
-            p(Piece(i, 1, PieceType::PAWN, PlayerColor::WHITE));
-        }
-        p(Piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(Piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(Piece(2, 0, PieceType::BISHOP, PlayerColor::WHITE));
-        p(Piece(5, 0, PieceType::BISHOP, PlayerColor::WHITE));
         // DEBUG:
         p(Piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
         // DEBUG:
@@ -369,6 +387,18 @@ impl BoardState {
         p(Piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
         // DEBUG:
         p(Piece(3, 2, PieceType::QUEEN, PlayerColor::WHITE));
+        Ok(BoardState { pieces })
+    }
+    fn default_board() -> tetra::Result<BoardState> {
+        let mut pieces = Vec::new();
+        let mut p = |i| pieces.push(i);
+        for i in 0..8 {
+            p(Piece(i, 1, PieceType::PAWN, PlayerColor::WHITE));
+        }
+        p(Piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece(2, 0, PieceType::BISHOP, PlayerColor::WHITE));
+        p(Piece(5, 0, PieceType::BISHOP, PlayerColor::WHITE));
         p(Piece(1, 0, PieceType::KNIGHT, PlayerColor::WHITE));
         p(Piece(6, 0, PieceType::KNIGHT, PlayerColor::WHITE));
         p(Piece(4, 0, PieceType::KING, PlayerColor::WHITE));
