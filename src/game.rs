@@ -44,7 +44,7 @@ impl GameContainer {
                     Vec2::new(piece.0 - 1, piece.1),
                 ];
                 for pos in positions {
-                    legal_moves.push(Piece(
+                    let temp = Piece(
                         pos.x,
                         pos.y,
                         PieceType::KING,
@@ -53,7 +53,10 @@ impl GameContainer {
                         } else {
                             PlayerColor::BLACK
                         },
-                    ));
+                    );
+                    if self.check_move(pos){
+                        legal_moves.push(temp);
+                    }
                 }
             } else if piece.2 == PieceType::PAWN {
                 // TODO: boundary_check(attack moves)
@@ -202,17 +205,15 @@ impl GameContainer {
                     Vec2::new(p.0 + 1, p.1),
                     Vec2::new(p.0 - 1, p.1),
                 ];
-                // FIXME: what if it is check??
                 // FIXME: checks are messed up
-                if self.isnt_check(p) {
-                    for pos in positions {
-                        let temp = Piece(pos.x, pos.y, PieceType::KING, p.3);
-                        if self.check_boundaries(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp)
-                        {
-                            moves.push(temp);
-                        }
+                for pos in positions {
+                    let temp = Piece(pos.x, pos.y, PieceType::KING, p.3);
+                    if self.check_move(Vec2::new(temp.0, temp.1)) //&& self.isnt_check(temp) // FIXME: <-- makes this not work
+                    {
+                        moves.push(temp);
                     }
                 }
+                // FIXME: what if it is check??
             }
             PieceType::ROOK => {
                 // TODO: abstract, simplify
@@ -386,7 +387,7 @@ impl BoardState {
         // DEBUG:
         p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
         // DEBUG:
-        p(Piece(6, 3, PieceType::KING, PlayerColor::WHITE));
+        p(Piece(6, 4, PieceType::KING, PlayerColor::WHITE));
         // DEBUG:
         p(Piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
         // DEBUG:
