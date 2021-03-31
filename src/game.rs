@@ -31,14 +31,13 @@ impl GameContainer {
         for piece in pcs {
             if piece.2 == PieceType::KING || p.3 == piece.3 {
                 // FIXME: king gets ignored, else stack overflow
-                continue;
-            }
-            {
+            } else {
+                // FIXME: needs to account for pawn double moves
                 legal_moves.append(&mut self.get_legal_moves(piece));
             }
         }
         for mv in legal_moves {
-            if mv.0 == p.1 && mv.1 == p.1 && p.3 != mv.3 {
+            if mv.0 == p.0 && mv.1 == p.1 {
                 return false;
             }
         }
@@ -175,13 +174,17 @@ impl GameContainer {
                 // FIXME: what if it is check??
                 // FIXME: checks are messed up
                 if self.isnt_check(p) {
+                    // println!("King isn't in check");`
                     for pos in positions {
                         let temp = Piece(pos.x, pos.y, PieceType::KING, p.3);
-                        if check_move(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp) {
+                        if check_boundaries(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp) {
                             moves.push(temp);
                         }
                     }
                 }
+                // else{
+                //     println!("King is in check!");
+                // }
             }
             PieceType::ROOK => {
                 // TODO: abstract
@@ -361,7 +364,7 @@ impl BoardState {
         // DEBUG:
         p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
         // DEBUG:
-        p(Piece(7, 4, PieceType::KING, PlayerColor::WHITE));
+        p(Piece(6, 3, PieceType::KING, PlayerColor::WHITE));
         // DEBUG:
         p(Piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
         // DEBUG:
@@ -386,7 +389,7 @@ impl BoardState {
 }
 #[derive(Clone, Copy)]
 pub struct Piece(pub i8, pub i8, pub PieceType, pub PlayerColor);
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum PieceType {
     PAWN,
     ROOK,
@@ -395,7 +398,7 @@ pub enum PieceType {
     KING,
     QUEEN,
 }
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum PlayerColor {
     BLACK,
     WHITE,
