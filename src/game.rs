@@ -26,49 +26,20 @@ impl GameContainer {
         // FIXME: cloning here is stupid
         let pcs = self.current_pieces().clone();
         // TODO: use 2D array to precompute attacked squares
-        let mut legal_moves = Vec::<Piece>::new();
         for piece in pcs {
             if p.3 == piece.3 {
-                // NOTE: check_move() is run later, so you can't take your pieces
             } else if piece.2 == PieceType::KING {
-                // FIXME: duplicate code
-                // FIXME: lets you take your own pieces with king??
-                let positions = vec![
-                    Vec2::new(piece.0, piece.1 + 1),
-                    Vec2::new(piece.0, piece.1 - 1),
-                    Vec2::new(piece.0 + 1, piece.1 - 1),
-                    Vec2::new(piece.0 + 1, piece.1 + 1),
-                    Vec2::new(piece.0 - 1, piece.1 + 1),
-                    Vec2::new(piece.0 - 1, piece.1 - 1),
-                    Vec2::new(piece.0 + 1, piece.1),
-                    Vec2::new(piece.0 - 1, piece.1),
-                ];
-                for pos in positions {
-                    let temp = Piece(
-                        pos.x,
-                        pos.y,
-                        PieceType::KING,
-                        if p.3 == PlayerColor::WHITE {
-                            PlayerColor::BLACK
-                        } else {
-                            PlayerColor::BLACK
-                        },
-                    );
-                    if self.check_move(pos){
-                        legal_moves.push(temp);
-                    }
-                }
+                // TODO:
             } else if piece.2 == PieceType::PAWN {
                 // TODO: boundary_check(attack moves)
                 // FIXME: ignores pawns
-            } else {
                 // FIXME: needs to account for pawn double moves
-                legal_moves.append(&mut self.get_legal_moves(piece));
-            }
-        }
-        for mv in legal_moves {
-            if self.check_move(Vec2::new(mv.0, mv.1)) {
-                return false;
+            } else {
+                for mv in self.get_legal_moves(piece) {
+                    if mv.0 == p.0 && mv.1 == p.1 {
+                        return false;
+                    }
+                }
             }
         }
         true
@@ -208,7 +179,8 @@ impl GameContainer {
                 // FIXME: checks are messed up
                 for pos in positions {
                     let temp = Piece(pos.x, pos.y, PieceType::KING, p.3);
-                    if self.check_move(Vec2::new(temp.0, temp.1)) //&& self.isnt_check(temp) // FIXME: <-- makes this not work
+                    if self.check_move(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp)
+                    // FIXME: <-- makes this not work
                     {
                         moves.push(temp);
                     }
