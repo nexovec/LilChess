@@ -23,13 +23,28 @@ impl GameContainer {
         None
     }
     fn isnt_check(&mut self, p: Piece) -> bool {
+        // NOTE: can be done simpler
         // FIXME: cloning here is stupid
         let pcs = self.current_pieces().clone();
         // TODO: use 2D array to precompute attacked squares
         for piece in pcs {
             if p.3 == piece.3 {
             } else if piece.2 == PieceType::KING {
-                // TODO:
+                let moves = vec![
+                    Vec2::new(piece.0, piece.1 - 1),
+                    Vec2::new(piece.0, piece.1 + 1),
+                    Vec2::new(piece.0 - 1, piece.1),
+                    Vec2::new(piece.0 + 1, piece.1),
+                    Vec2::new(piece.0 - 1, piece.1 + 1),
+                    Vec2::new(piece.0 + 1, piece.1 + 1),
+                    Vec2::new(piece.0 - 1, piece.1 - 1),
+                    Vec2::new(piece.0 + 1, piece.1 - 1),
+                ];
+                for mv in moves {
+                    if self.check_boundaries(mv) && mv.x == p.0 && mv.y == p.1 {
+                        return false;
+                    }
+                }
             } else if piece.2 == PieceType::PAWN {
                 // TODO: boundary_check(attack moves)
                 // FIXME: ignores pawns
@@ -354,16 +369,12 @@ impl BoardState {
     fn test_board_1() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
-        // DEBUG:
         p(Piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
-        // DEBUG:
         p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
-        // DEBUG:
         p(Piece(6, 4, PieceType::KING, PlayerColor::WHITE));
-        // DEBUG:
         p(Piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
-        // DEBUG:
-        p(Piece(3, 2, PieceType::QUEEN, PlayerColor::WHITE));
+        p(Piece(3, 1, PieceType::QUEEN, PlayerColor::WHITE));
+        p(Piece(6, 2, PieceType::KING, PlayerColor::BLACK));
         Ok(BoardState { pieces })
     }
     #[allow(dead_code)]
