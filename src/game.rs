@@ -208,6 +208,17 @@ impl GameContainer {
                         moves.push(temp);
                     }
                 }
+                // TODO: castles
+                // match p.2
+                // if self.hasnt_moved(a1) && self.hasnt_moved(e1) && self.is_empty(b1) && self.is_empty(c1)
+                // && self.isnt_check(b1) && self.isnt_check(c1){
+                //     moves.push(Piece(p.0-2,p.1,PieceType::KING, PlayerColor::WHITE));
+                // }
+                // if self.hasnt_moved(h1) && self.hasnt_moved(e1) && self.is_empty(g1) && self.is_empty(f1)
+                // && self.isnt_check(g1) && self.isnt_check(f1){
+                //     moves.push(Piece(p.0+2,p.1,PieceType::KING, PlayerColor::WHITE));
+
+                // }
                 // FIXME: what if it is check??
             }
             PieceType::ROOK => {
