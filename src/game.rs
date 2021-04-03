@@ -46,6 +46,17 @@ impl GameContainer {
                     }
                 }
             } else if piece.2 == PieceType::PAWN {
+                let color_mult: i8 = if piece.3 == PlayerColor::WHITE { 1 } else { -1 };
+                // TODO: optimize
+                if (self.check_boundaries(Vec2::new(piece.0 + 1, piece.1 + color_mult))
+                    && piece.0 + 1 == p.0
+                    && piece.1 + color_mult == p.1)
+                    || (self.check_boundaries(Vec2::new(piece.0 - 1, piece.1 + color_mult))
+                        && piece.0 - 1 == p.0
+                        && piece.1 + color_mult == p.1)
+                {
+                    return false;
+                }
                 // TODO: boundary_check(attack moves)
                 // FIXME: ignores pawns
                 // FIXME: needs to account for pawn double moves
@@ -191,12 +202,9 @@ impl GameContainer {
                     Vec2::new(p.0 + 1, p.1),
                     Vec2::new(p.0 - 1, p.1),
                 ];
-                // FIXME: checks are messed up
                 for pos in positions {
                     let temp = Piece(pos.x, pos.y, PieceType::KING, p.3);
-                    if self.check_move(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp)
-                    // FIXME: <-- makes this not work
-                    {
+                    if self.check_move(Vec2::new(temp.0, temp.1)) && self.isnt_check(temp) {
                         moves.push(temp);
                     }
                 }
@@ -369,12 +377,13 @@ impl BoardState {
     fn test_board_1() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
-        p(Piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
         p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
         p(Piece(6, 4, PieceType::KING, PlayerColor::WHITE));
         p(Piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
         p(Piece(3, 1, PieceType::QUEEN, PlayerColor::WHITE));
         p(Piece(6, 2, PieceType::KING, PlayerColor::BLACK));
+        p(Piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
+        p(Piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
         Ok(BoardState { pieces })
     }
     #[allow(dead_code)]
