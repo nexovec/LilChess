@@ -1,4 +1,5 @@
 use crate::game::*;
+use crate::game_types::*;
 use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};
 use crate::Assets;
 use tetra::graphics;
@@ -71,10 +72,12 @@ impl Scene for MenuScene {
     }
 }
 struct GameScene {
+    assets: Assets,
     game: GameContainer,
     canvas: Canvas,
     history_box: UIFlexBox,
     pieces_box: UIFlexBox,
+    notes_box: UIFlexBox,
 }
 impl GameScene {
     fn new(ctx: &mut Context) -> tetra::Result<GameScene> {
@@ -93,18 +96,6 @@ impl GameScene {
         graphics::reset_canvas(ctx);
         graphics::reset_shader(ctx);
         // TODO: chessboard and pieces into one UIFlexBox
-        // let chess_piece_king = UIImage::new(
-        //     ctx,
-        //     Vec2::new(0.,0.),
-        //     assets.w_k,
-        //     Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
-        // )?;
-        // let chess_piece_bishop = UIImage::new(
-        //     ctx,
-        //     Vec2::new(50.,0.),
-        //     assets.w_b,
-        //     Box::new(|_:&mut _|{Transition::None}), Box::new(|_: &mut _|{Transition::None})
-        // )?;
 
         let mut pieces_box = UIFlexBox::new(
             ctx,
@@ -148,9 +139,16 @@ impl GameScene {
             )?;
             Ok(back)
         };
-        for i in game.current_pieces()?.iter() {
+        for i in game.current_pieces().iter() {
             pieces_box.children.push(Box::new(get_image(i)?));
         }
+        let notes_box = UIFlexBox::new(
+            ctx,
+            board_size,
+            Vec2::<f32>::new(100.0, 100.0),
+            Vec4::<f32>::new(0.0, 0.0, 0.0, 0.0),
+            2,
+        )?;
 
         let mut flex_box = UIFlexBox::new(
             ctx,
@@ -168,23 +166,68 @@ impl GameScene {
             Box::new(|_: &mut _| Transition::None),
         )?));
         Ok(GameScene {
+            assets,
             game,
             canvas: board_canvas,
             history_box: flex_box,
             pieces_box,
+            notes_box,
         })
+    }
+    fn is_hovered(&self, ctx: &mut Context, pos: &Vec2<i32>, size: Vec2<f32>) -> bool {
+        let pos = pos.as_();
+        let mp = tetra::input::get_mouse_position(ctx);
+        mp.x >= pos.x && mp.x < pos.x + size.x && mp.y >= pos.y && mp.y < pos.y + size.y
+    }
+    fn get_selected_square(&mut self, ctx: &mut Context) -> Option<Vec2<i8>> {
+        if tetra::input::is_mouse_button_pressed(ctx, tetra::input::MouseButton::Left) {
+            if self.is_hovered(ctx, &self.pieces_box.pos.as_(), self.pieces_box.size.as_()) {
+                let mp = tetra::input::get_mouse_position(ctx);
+                let x = mp.x - self.pieces_box.pos.x;
+                let y = self.pieces_box.pos.y + self.pieces_box.size.y - mp.y;
+                if x > 400. || y > 400. {
+                    return None;
+                }
+                return Some(Vec2::<i8>::new((x / 50.) as i8, (y / 50.) as i8));
+            }
+        }
+        None
     }
 }
 impl Scene for GameScene {
     fn draw(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
         let unit = 1.0 / 255.;
         graphics::clear(ctx, Color::rgb(unit * 196., unit * 196., unit * 196.));
-        self.canvas.draw(ctx, Vec2::<f32>::new(100.0, 100.0)); // FIXME: DRY
+        self.canvas.draw(ctx, Vec2::<f32>::new(100.0, 100.0));
+        self.notes_box.draw(ctx)?;
         self.pieces_box.draw(ctx)?;
         self.history_box.draw(ctx)?;
         Ok(Transition::None)
     }
-    fn update(&mut self, _ctx: &mut Context) -> tetra::Result<Transition> {
+    fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
+        // TODO: make notes go bruh...
+        match self.get_selected_square(ctx) {
+            Some(i) => match self.game.get_piece_at(Vec2::new(i.x, i.y)) {
+                Some(p) => {
+                    graphics::set_canvas(ctx, &self.notes_box.canvas);
+                    let moves = self.game.get_legal_moves(p);
+                    graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
+                    for i in moves {
+                        self.assets.green_square.draw(
+                            ctx,
+                            Vec2::new(50 * i.0 as i32, 400 - 50 * (i.1 + 1) as i32).as_(),
+                        );
+                    }
+                    graphics::reset_canvas(ctx);
+                }
+                None => {
+                    graphics::set_canvas(ctx, &self.notes_box.canvas);
+                    graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
+                    graphics::reset_canvas(ctx);
+                }
+            },
+            None => {}
+        }
         Ok(Transition::None)
     }
 }
