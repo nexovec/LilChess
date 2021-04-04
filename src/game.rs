@@ -93,8 +93,17 @@ impl GameContainer {
         }
         true
     }
+    fn has_moved(&mut self, pos: Vec2<i8>) -> bool {
+        // FIXME: you can always castle if king and a rook are on the default positions
+        match self.get_piece_at(pos).unwrap().2 {
+            PieceType::BISHOP => return true,
+            PieceType::KNIGHT => return true,
+            PieceType::QUEEN => return true,
+            _ => return false,
+        }
+    }
     pub fn get_legal_moves(&mut self, p: Piece) -> Vec<Piece> {
-        // FIXME: detect illegal positions
+        // FIXME: detect illegal positions, including ignored checks, pawns on first ranks, castles
         let mut moves = Vec::<Piece>::new();
         match p.2 {
             // TODO: abstract
@@ -189,7 +198,6 @@ impl GameContainer {
                 }
             }
             PieceType::KING => {
-                // TODO: castles
                 let positions = vec![
                     Vec2::new(p.0, p.1 + 1),
                     Vec2::new(p.0, p.1 - 1),
@@ -206,17 +214,72 @@ impl GameContainer {
                         moves.push(temp);
                     }
                 }
-                // TODO: castles
-                // match p.2
-                // if self.hasnt_moved(a1) && self.hasnt_moved(e1) && self.is_empty(b1) && self.is_empty(c1)
-                // && self.isnt_check(b1) && self.isnt_check(c1){
-                //     moves.push(Piece(p.0-2,p.1,PieceType::KING, PlayerColor::WHITE));
-                // }
-                // if self.hasnt_moved(h1) && self.hasnt_moved(e1) && self.is_empty(g1) && self.is_empty(f1)
-                // && self.isnt_check(g1) && self.isnt_check(f1){
-                //     moves.push(Piece(p.0+2,p.1,PieceType::KING, PlayerColor::WHITE));
-
-                // }
+                if self.isnt_check(p) {
+                    match p.3 {
+                        PlayerColor::WHITE => {
+                            // FIXME: DRY
+                            // queen side castle
+                            if self.get_piece_at(Vec2::new(4, 0)).is_some()
+                                && self.get_piece_at(Vec2::new(4, 0)).unwrap().2 == PieceType::KING
+                                && !self.has_moved(Vec2::new(4, 0))
+                                && self.get_piece_at(Vec2::new(0, 0)).is_some()
+                                && self.get_piece_at(Vec2::new(0, 0)).unwrap().2 == PieceType::ROOK
+                                && !self.has_moved(Vec2::new(0, 0))
+                                && self.get_piece_at(Vec2::new(1, 0)).is_none()
+                                && self.get_piece_at(Vec2::new(2, 0)).is_none()
+                                && self.get_piece_at(Vec2::new(3, 0)).is_none()
+                                && self.isnt_check(Piece(2, 0, PieceType::KING, PlayerColor::WHITE))
+                                && self.isnt_check(Piece(3, 0, PieceType::KING, PlayerColor::WHITE))
+                            {
+                                moves.push(Piece(2, 0, PieceType::KING, p.3));
+                            }
+                            // king side castle
+                            if self.get_piece_at(Vec2::new(4, 0)).is_some()
+                                && self.get_piece_at(Vec2::new(4, 0)).unwrap().2 == PieceType::KING
+                                && !self.has_moved(Vec2::new(4, 0))
+                                && self.get_piece_at(Vec2::new(7, 0)).is_some()
+                                && self.get_piece_at(Vec2::new(7, 0)).unwrap().2 == PieceType::ROOK
+                                && !self.has_moved(Vec2::new(7, 0))
+                                && self.get_piece_at(Vec2::new(5, 0)).is_none()
+                                && self.get_piece_at(Vec2::new(6, 0)).is_none()
+                                && self.isnt_check(Piece(6, 0, PieceType::KING, PlayerColor::WHITE))
+                                && self.isnt_check(Piece(5, 0, PieceType::KING, PlayerColor::WHITE))
+                            {
+                                moves.push(Piece(6, 0, PieceType::KING, PlayerColor::WHITE));
+                            }
+                        }
+                        PlayerColor::BLACK => {
+                            if self.get_piece_at(Vec2::new(4, 7)).is_some()
+                                && self.get_piece_at(Vec2::new(4, 7)).unwrap().2 == PieceType::KING
+                                && !self.has_moved(Vec2::new(4, 7))
+                                && self.get_piece_at(Vec2::new(0, 7)).is_some()
+                                && self.get_piece_at(Vec2::new(0, 7)).unwrap().2 == PieceType::ROOK
+                                && !self.has_moved(Vec2::new(0, 7))
+                                && self.get_piece_at(Vec2::new(1, 7)).is_none()
+                                && self.get_piece_at(Vec2::new(2, 7)).is_none()
+                                && self.get_piece_at(Vec2::new(3, 7)).is_none()
+                                && self.isnt_check(Piece(2, 7, PieceType::KING, PlayerColor::BLACK))
+                                && self.isnt_check(Piece(3, 7, PieceType::KING, PlayerColor::WHITE))
+                            {
+                                moves.push(Piece(2, 7, PieceType::KING, PlayerColor::BLACK));
+                            }
+                            // king side castle
+                            if self.get_piece_at(Vec2::new(4, 7)).is_some()
+                                && self.get_piece_at(Vec2::new(4, 7)).unwrap().2 == PieceType::KING
+                                && !self.has_moved(Vec2::new(4, 7))
+                                && self.get_piece_at(Vec2::new(7, 7)).is_some()
+                                && self.get_piece_at(Vec2::new(7, 7)).unwrap().2 == PieceType::ROOK
+                                && !self.has_moved(Vec2::new(7, 7))
+                                && self.get_piece_at(Vec2::new(5, 7)).is_none()
+                                && self.get_piece_at(Vec2::new(6, 7)).is_none()
+                                && self.isnt_check(Piece(6, 7, PieceType::KING, PlayerColor::BLACK))
+                                && self.isnt_check(Piece(5, 7, PieceType::KING, PlayerColor::WHITE))
+                            {
+                                moves.push(Piece(6, 7, PieceType::KING, p.3));
+                            }
+                        }
+                    }
+                }
                 // FIXME: what if it is check??
             }
             PieceType::ROOK => {

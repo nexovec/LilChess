@@ -12,7 +12,8 @@ pub struct BoardState {
     pub pieces: Vec<Piece>,
 }
 impl BoardState {
-    fn test_board_1() -> tetra::Result<BoardState> {
+    #[allow(dead_code)]
+    fn test_board_2() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
         p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
@@ -21,6 +22,19 @@ impl BoardState {
         p(Piece(3, 1, PieceType::QUEEN, PlayerColor::WHITE));
         p(Piece(6, 2, PieceType::KING, PlayerColor::BLACK));
         p(Piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
+        p(Piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
+        Ok(BoardState { pieces })
+    }
+    fn test_board_1() -> tetra::Result<BoardState> {
+        let mut pieces = Vec::new();
+        let mut p = |i| pieces.push(i);
+        p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(Piece(6, 4, PieceType::KING, PlayerColor::BLACK));
+        p(Piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece(3, 2, PieceType::QUEEN, PlayerColor::WHITE));
+        p(Piece(4, 0, PieceType::KING, PlayerColor::WHITE));
+        p(Piece(5, 3, PieceType::BISHOP, PlayerColor::BLACK));
         p(Piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
         Ok(BoardState { pieces })
     }
