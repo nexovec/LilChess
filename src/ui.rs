@@ -79,12 +79,12 @@ trait UIMouseInteractiveRect {
 }
 #[allow(dead_code)]
 pub struct UIFlexBox {
-    pos: Vec2<f32>,
-    size: Vec2<f32>,
+    pub pos: Vec2<f32>,
+    pub size: Vec2<f32>,
     border_width: i32,
     pub children: Vec<Box<dyn Scene>>,
     texture: Texture,
-    canvas: Canvas,
+    pub canvas: Canvas,
 }
 impl UIFlexBox {
     pub fn new(
@@ -98,12 +98,10 @@ impl UIFlexBox {
         let sh: Shader = Shader::from_fragment_file(ctx, "./res/shaders/box_border.frag")?;
         graphics::set_canvas(ctx, &canvas);
         graphics::set_shader(ctx, &sh);
-
         sh.set_uniform(ctx, "border_width", border_width);
-        sh.set_uniform(ctx, "viewport", size); // FIXME: magic numbers
+        sh.set_uniform(ctx, "viewport", size);
         sh.set_uniform(ctx, "border_color", border_color);
         canvas.draw(ctx, Vec2::new(0., 0.));
-
         graphics::reset_canvas(ctx);
         graphics::reset_shader(ctx);
 
