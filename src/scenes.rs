@@ -1,4 +1,5 @@
 use crate::game::*;
+use crate::game_types::*;
 use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};
 use crate::Assets;
 use tetra::graphics;

@@ -1,4 +1,5 @@
 mod game;
+mod game_types;
 mod scenes;
 mod ui;
 use scenes::{MenuScene, Scene, Transition};
