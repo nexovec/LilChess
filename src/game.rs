@@ -10,6 +10,9 @@ impl GameContainer {
         let history = GameHistory::new_game()?;
         Ok(GameContainer { history })
     }
+    pub fn execute_move(&mut self, mv: ChessMove){
+        todo!();
+    }
     pub fn current_pieces(&mut self) -> &Vec<Piece> {
         self.history.board_states.last_mut();
         &self.history.board_states.last_mut().unwrap().pieces

@@ -78,6 +78,7 @@ struct GameScene {
     history_box: UIFlexBox,
     pieces_box: UIFlexBox,
     notes_box: UIFlexBox,
+    selected:Option<Vec2<i8>>
 }
 impl GameScene {
     fn new(ctx: &mut Context) -> tetra::Result<GameScene> {
@@ -172,6 +173,7 @@ impl GameScene {
             history_box: flex_box,
             pieces_box,
             notes_box,
+            selected:None
         })
     }
     fn is_hovered(&self, ctx: &mut Context, pos: &Vec2<i32>, size: Vec2<f32>) -> bool {
@@ -209,18 +211,33 @@ impl Scene for GameScene {
         match self.get_selected_square(ctx) {
             Some(i) => match self.game.get_piece_at(Vec2::new(i.x, i.y)) {
                 Some(p) => {
+                    self.selected = Some(Vec2::new(p.0,p.1).as_());
+                    // FIXME: don't use graphics in update
                     graphics::set_canvas(ctx, &self.notes_box.canvas);
                     let moves = self.game.get_legal_moves(p);
                     graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
-                    for i in moves {
+                    for mv in moves {
                         self.assets.green_square.draw(
                             ctx,
-                            Vec2::new(50 * i.0 as i32, 400 - 50 * (i.1 + 1) as i32).as_(),
+                            Vec2::new(50 * mv.0 as i32, 400 - 50 * (mv.1 + 1) as i32).as_(),
                         );
                     }
                     graphics::reset_canvas(ctx);
                 }
                 None => {
+                    // detect move intent
+                    if self.selected.is_some(){
+                        let piece = self.game.get_piece_at(self.selected.unwrap()).unwrap();
+                        let moves = self.game.get_legal_moves(piece);
+                        for mv in moves {
+                            if i == Vec2::new(mv.0,mv.1){
+                                self.game.execute_move(ChessMove{from:piece,to:Piece(mv.0,mv.1,piece.2,piece.3)});
+                                break;
+                            }
+                        }
+                    }
+                    self.selected = None;
+                    // FIXME: don't use graphics in update
                     graphics::set_canvas(ctx, &self.notes_box.canvas);
                     graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
                     graphics::reset_canvas(ctx);

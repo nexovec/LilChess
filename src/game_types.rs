@@ -69,6 +69,11 @@ impl BoardState {
 }
 #[derive(Clone, Copy)]
 pub struct Piece(pub i8, pub i8, pub PieceType, pub PlayerColor);
+#[derive(Clone, Copy)]
+pub struct ChessMove{
+    pub from: Piece,
+    pub to: Piece
+}
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum PieceType {
     PAWN,
