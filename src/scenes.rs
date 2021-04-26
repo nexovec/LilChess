@@ -78,7 +78,8 @@ struct GameScene {
     history_box: UIFlexBox,
     pieces_box: UIFlexBox,
     notes_box: UIFlexBox,
-    selected:Option<Vec2<i8>>
+    selected: Option<Vec2<i8>>,
+    should_rerender_pieces: bool,
 }
 impl GameScene {
     fn new(ctx: &mut Context) -> tetra::Result<GameScene> {
@@ -106,43 +107,6 @@ impl GameScene {
             2,
         )?;
         let mut game = GameContainer::new()?;
-        let mut get_image = |piece: &Piece| -> tetra::Result<UIImage> {
-            let a = &assets;
-            let i: &Texture;
-            type P = PieceType;
-            match piece.3 {
-                PlayerColor::BLACK => match piece.2 {
-                    P::BISHOP => i = &a.b_b,
-                    P::KNIGHT => i = &a.b_n,
-                    P::ROOK => i = &a.b_r,
-                    P::KING => i = &a.b_k,
-                    P::QUEEN => i = &a.b_q,
-                    P::PAWN => i = &a.b_p,
-                },
-                PlayerColor::WHITE => match piece.2 {
-                    P::BISHOP => i = &a.w_b,
-                    P::KNIGHT => i = &a.w_n,
-                    P::ROOK => i = &a.w_r,
-                    P::KING => i = &a.w_k,
-                    P::QUEEN => i = &a.w_q,
-                    P::PAWN => i = &a.w_p,
-                },
-            }
-            let back = UIImage::new(
-                ctx,
-                Vec2::new(
-                    (piece.0 as i32 * 50) as f32,
-                    ((7 - piece.1) as i32 * 50) as f32,
-                ),
-                i.clone(),
-                Box::new(|_: &mut _| Transition::None),
-                Box::new(|_: &mut _| Transition::None),
-            )?;
-            Ok(back)
-        };
-        for i in game.current_pieces().iter() {
-            pieces_box.children.push(Box::new(get_image(i)?));
-        }
         let notes_box = UIFlexBox::new(
             ctx,
             board_size,
@@ -173,8 +137,42 @@ impl GameScene {
             history_box: flex_box,
             pieces_box,
             notes_box,
-            selected:None
+            selected: None,
+            should_rerender_pieces: true,
         })
+    }
+    fn get_image(piece: &Piece, a: &Assets, ctx: &mut Context) -> tetra::Result<UIImage> {
+        let i: &Texture;
+        type P = PieceType;
+        match piece.3 {
+            PlayerColor::BLACK => match piece.2 {
+                P::BISHOP => i = &a.b_b,
+                P::KNIGHT => i = &a.b_n,
+                P::ROOK => i = &a.b_r,
+                P::KING => i = &a.b_k,
+                P::QUEEN => i = &a.b_q,
+                P::PAWN => i = &a.b_p,
+            },
+            PlayerColor::WHITE => match piece.2 {
+                P::BISHOP => i = &a.w_b,
+                P::KNIGHT => i = &a.w_n,
+                P::ROOK => i = &a.w_r,
+                P::KING => i = &a.w_k,
+                P::QUEEN => i = &a.w_q,
+                P::PAWN => i = &a.w_p,
+            },
+        }
+        let back = UIImage::new(
+            ctx,
+            Vec2::new(
+                (piece.0 as i32 * 50) as f32,
+                ((7 - piece.1) as i32 * 50) as f32,
+            ),
+            i.clone(),
+            Box::new(|_: &mut _| Transition::None),
+            Box::new(|_: &mut _| Transition::None),
+        )?;
+        Ok(back)
     }
     fn is_hovered(&self, ctx: &mut Context, pos: &Vec2<i32>, size: Vec2<f32>) -> bool {
         let pos = pos.as_();
@@ -202,6 +200,11 @@ impl Scene for GameScene {
         graphics::clear(ctx, Color::rgb(unit * 196., unit * 196., unit * 196.));
         self.canvas.draw(ctx, Vec2::<f32>::new(100.0, 100.0));
         self.notes_box.draw(ctx)?;
+        if self.should_rerender_pieces {
+            graphics::set_canvas(ctx, &self.pieces_box.canvas);
+            graphics::clear(ctx, self.assets.alpha_color);
+            graphics::reset_canvas(ctx);
+        }
         self.pieces_box.draw(ctx)?;
         self.history_box.draw(ctx)?;
         Ok(Transition::None)
@@ -211,7 +214,7 @@ impl Scene for GameScene {
         match self.get_selected_square(ctx) {
             Some(i) => match self.game.get_piece_at(Vec2::new(i.x, i.y)) {
                 Some(p) => {
-                    self.selected = Some(Vec2::new(p.0,p.1).as_());
+                    self.selected = Some(Vec2::new(p.0, p.1).as_());
                     // FIXME: don't use graphics in update
                     graphics::set_canvas(ctx, &self.notes_box.canvas);
                     let moves = self.game.get_legal_moves(p);
@@ -226,12 +229,18 @@ impl Scene for GameScene {
                 }
                 None => {
                     // detect move intent
-                    if self.selected.is_some(){
+                    if self.selected.is_some() {
                         let piece = self.game.get_piece_at(self.selected.unwrap()).unwrap();
                         let moves = self.game.get_legal_moves(piece);
                         for mv in moves {
-                            if i == Vec2::new(mv.0,mv.1){
-                                self.game.execute_move(ChessMove{from:piece,to:Piece(mv.0,mv.1,piece.2,piece.3)});
+                            if i == Vec2::new(mv.0, mv.1) {
+                                match self.game.execute_move(ChessMove {
+                                    from: piece,
+                                    to: Piece(mv.0, mv.1, piece.2, piece.3),
+                                }) {
+                                    Some(_) => self.should_rerender_pieces = true,
+                                    None => self.should_rerender_pieces = false,
+                                }
                                 break;
                             }
                         }
@@ -244,6 +253,13 @@ impl Scene for GameScene {
                 }
             },
             None => {}
+        }
+        if self.should_rerender_pieces {
+            let mut new_pieces: Vec<Box<dyn Scene>> = Vec::new();
+            for i in self.game.current_pieces().iter() {
+                new_pieces.push(Box::new(GameScene::get_image(i, &mut self.assets, ctx)?));
+            }
+            let _ = std::mem::replace(&mut self.pieces_box.children, new_pieces);
         }
         Ok(Transition::None)
     }

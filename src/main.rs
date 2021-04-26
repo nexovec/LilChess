@@ -76,16 +76,17 @@ pub struct Assets {
     b_n: Texture,
     b_b: Texture,
     b_p: Texture,
+    alpha_color: Color,
 }
 impl Assets {
     // TODO: fix bad piece coloring
     pub fn load_assets(ctx: &mut Context) -> tetra::Result<Assets> {
         let assets: Assets;
+        let alpha_color = Color::rgba(0., 0., 0., 0.);
         {
             let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?;
             let chess_font = VectorFontBuilder::new("./res/fonts/chess_font.ttf")?;
             let square_size: usize = 50;
-            let empty = Color::rgba(0., 0., 0., 0.);
 
             let blacken =
                 tetra::graphics::Shader::from_fragment_file(ctx, "./res/shaders/blacken.frag")?;
@@ -94,7 +95,7 @@ impl Assets {
                     let cvs =
                         tetra::graphics::Canvas::new(ctx, square_size as i32, square_size as i32)?;
                     graphics::set_canvas(ctx, &cvs);
-                    graphics::clear(ctx, empty);
+                    graphics::clear(ctx, alpha_color);
                     let mut text = Text::new(letter, chess_font.with_size(ctx, 48.)?);
                     text.draw(ctx, Vec2::new(0., 0.));
                     if is_black {
@@ -145,6 +146,7 @@ impl Assets {
                 b_n,
                 b_b,
                 b_p,
+                alpha_color,
             };
         }
         Ok(assets)

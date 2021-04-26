@@ -10,11 +10,29 @@ impl GameContainer {
         let history = GameHistory::new_game()?;
         Ok(GameContainer { history })
     }
-    pub fn execute_move(&mut self, mv: ChessMove){
-        todo!();
+    pub fn execute_move(&mut self, mv: ChessMove) -> Option<ChessMove> {
+        // check for player color
+        let current_color;
+        match self.history.moves.last() {
+            Some(m) => {
+                current_color = if m.from.3 == PlayerColor::BLACK {
+                    PlayerColor::WHITE
+                } else {
+                    PlayerColor::BLACK
+                }
+            }
+            None => current_color = self.history.initial_p_to_move,
+        }
+        // check if consistent
+        if mv.from.3 != current_color {
+            // TODO: this means we have a cheater or a bug, do something clever here...
+            println!("Big very bug");
+            return None;
+        }
+        self.history.execute_move(mv);
+        Some(mv)
     }
     pub fn current_pieces(&mut self) -> &Vec<Piece> {
-        self.history.board_states.last_mut();
         &self.history.board_states.last_mut().unwrap().pieces
     }
     pub fn get_piece_at(&mut self, pos: Vec2<i8>) -> Option<Piece> {
