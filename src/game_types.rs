@@ -1,13 +1,34 @@
 pub struct GameHistory {
     pub board_states: Vec<BoardState>,
+    pub moves: Vec<ChessMove>,
+    pub initial_p_to_move: PlayerColor,
 }
 impl GameHistory {
     pub fn new_game() -> tetra::Result<GameHistory> {
         // let board_states = vec![BoardState::default_board()?];
         let board_states = vec![BoardState::test_board_1()?];
-        Ok(GameHistory { board_states })
+        let moves = Vec::new();
+        let initial_p_to_move = PlayerColor::WHITE;
+        Ok(GameHistory {
+            board_states,
+            moves,
+            initial_p_to_move,
+        })
+    }
+    /**
+     * Assumes the move is already checked
+     */
+    pub fn execute_move(&mut self, mv: ChessMove) {
+        self.moves.push(mv);
+        let mut new_state = self.board_states.last_mut().unwrap().clone();
+        let index = new_state.pieces.iter().position(|x| *x == mv.from).unwrap();
+        new_state.pieces.remove(index);
+        // FIXME: mv.to can be other piece, FIXME for the FIXME: probably isn't the case
+        new_state.pieces.push(mv.to);
+        self.board_states.push(new_state);
     }
 }
+#[derive(Clone)]
 pub struct BoardState {
     pub pieces: Vec<Piece>,
 }
@@ -67,8 +88,13 @@ impl BoardState {
         Ok(BoardState { pieces })
     }
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Piece(pub i8, pub i8, pub PieceType, pub PlayerColor);
+#[derive(Clone, Copy)]
+pub struct ChessMove {
+    pub from: Piece,
+    pub to: Piece,
+}
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum PieceType {
     PAWN,
