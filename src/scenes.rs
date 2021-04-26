@@ -99,14 +99,14 @@ impl GameScene {
         graphics::reset_shader(ctx);
         // TODO: chessboard and pieces into one UIFlexBox
 
-        let mut pieces_box = UIFlexBox::new(
+        let pieces_box = UIFlexBox::new(
             ctx,
             board_size,
             Vec2::<f32>::new(100.0, 100.0),
             Vec4::<f32>::new(0.0, 0.0, 0.0, 0.0),
             2,
         )?;
-        let mut game = GameContainer::new()?;
+        let game = GameContainer::new()?;
         let notes_box = UIFlexBox::new(
             ctx,
             board_size,
@@ -210,10 +210,11 @@ impl Scene for GameScene {
         Ok(Transition::None)
     }
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
-        // TODO: make notes go bruh...
         match self.get_selected_square(ctx) {
             Some(i) => match self.game.get_piece_at(Vec2::new(i.x, i.y)) {
                 Some(p) => {
+                    // TODO: prefer taking a piece to focusing on it
+                    // TODO: ban focus on piece of opposite color
                     self.selected = Some(Vec2::new(p.0, p.1).as_());
                     // FIXME: don't use graphics in update
                     graphics::set_canvas(ctx, &self.notes_box.canvas);

@@ -21,9 +21,21 @@ impl GameHistory {
     pub fn execute_move(&mut self, mv: ChessMove) {
         self.moves.push(mv);
         let mut new_state = self.board_states.last_mut().unwrap().clone();
-        let index = new_state.pieces.iter().position(|x| *x == mv.from).unwrap();
-        new_state.pieces.remove(index);
-        // FIXME: mv.to can be other piece, FIXME for the FIXME: probably isn't the case
+        // TODO: abstract into closure
+        match new_state.pieces.iter().position(|x| *x == mv.from) {
+            Some(k) => {
+                new_state.pieces.remove(k);
+            }
+            None => {
+                // TODO: cheater or bug, do something fun
+            }
+        }
+        match new_state.pieces.iter().position(|x| *x == mv.to) {
+            Some(k) => {
+                new_state.pieces.remove(k);
+            }
+            None => {}
+        }
         new_state.pieces.push(mv.to);
         self.board_states.push(new_state);
     }
