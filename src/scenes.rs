@@ -1,3 +1,5 @@
+use std::thread::current;
+
 use crate::game::*;
 use crate::game_types::*;
 use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};
@@ -80,6 +82,7 @@ struct GameScene {
     notes_box: UIFlexBox,
     selected: Option<Vec2<i8>>,
     should_rerender_pieces: bool,
+    should_clear_notes: bool,
 }
 impl GameScene {
     fn new(ctx: &mut Context) -> tetra::Result<GameScene> {
@@ -139,6 +142,7 @@ impl GameScene {
             notes_box,
             selected: None,
             should_rerender_pieces: true,
+            should_clear_notes: true,
         })
     }
     fn get_image(piece: &Piece, a: &Assets, ctx: &mut Context) -> tetra::Result<UIImage> {
@@ -210,49 +214,83 @@ impl Scene for GameScene {
         Ok(Transition::None)
     }
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
+        let mut move_to_make: Option<ChessMove> = None;
         match self.get_selected_square(ctx) {
-            Some(i) => match self.game.get_piece_at(Vec2::new(i.x, i.y)) {
+            Some(i) => match self.game.get_piece_at_square(Vec2::new(i.x, i.y)) {
                 Some(p) => {
-                    // TODO: prefer taking a piece to focusing on it
-                    // TODO: ban focus on piece of opposite color
-                    self.selected = Some(Vec2::new(p.0, p.1).as_());
-                    // FIXME: don't use graphics in update
-                    graphics::set_canvas(ctx, &self.notes_box.canvas);
-                    let moves = self.game.get_legal_moves(p);
-                    graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
-                    for mv in moves {
-                        self.assets.green_square.draw(
-                            ctx,
-                            Vec2::new(50 * mv.0 as i32, 400 - 50 * (mv.1 + 1) as i32).as_(),
-                        );
+                    match self.selected {
+                        Some(currently_selected) => {
+                            let currently_selected_piece =
+                                self.game.get_piece_at_square(currently_selected).unwrap();
+                            let moves = self.game.get_legal_moves(currently_selected_piece);
+                            if moves
+                                .iter()
+                                .position(|x| Vec2::new(x.0, x.1) == Vec2::new(p.0, p.1))
+                                .is_some()
+                            {
+                                move_to_make = Some(ChessMove {
+                                    from: currently_selected_piece,
+                                    to: Piece(
+                                        p.0,
+                                        p.1,
+                                        currently_selected_piece.2,
+                                        currently_selected_piece.3,
+                                    ),
+                                });
+                                self.should_clear_notes = true;
+                            }
+                        }
+                        None => {
+                            // TODO: ban focus on piece of opposite color
+                            let moves = self.game.get_legal_moves(p);
+                            self.selected = Some(Vec2::new(p.0, p.1).as_());
+                            // FIXME: don't use graphics in update
+                            graphics::set_canvas(ctx, &self.notes_box.canvas);
+                            graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
+                            for mv in moves {
+                                self.assets.green_square.draw(
+                                    ctx,
+                                    Vec2::new(50 * mv.0 as i32, 400 - 50 * (mv.1 + 1) as i32).as_(),
+                                );
+                            }
+                            graphics::reset_canvas(ctx);
+                        }
                     }
-                    graphics::reset_canvas(ctx);
                 }
                 None => {
                     // detect move intent
                     if self.selected.is_some() {
-                        let piece = self.game.get_piece_at(self.selected.unwrap()).unwrap();
+                        let piece = self
+                            .game
+                            .get_piece_at_square(self.selected.unwrap())
+                            .unwrap();
                         let moves = self.game.get_legal_moves(piece);
                         for mv in moves {
                             if i == Vec2::new(mv.0, mv.1) {
-                                match self.game.execute_move(ChessMove {
+                                move_to_make = Some(ChessMove {
                                     from: piece,
                                     to: Piece(mv.0, mv.1, piece.2, piece.3),
-                                }) {
-                                    Some(_) => self.should_rerender_pieces = true,
-                                    None => self.should_rerender_pieces = false,
-                                }
+                                });
                                 break;
                             }
                         }
                     }
                     self.selected = None;
-                    // FIXME: don't use graphics in update
-                    graphics::set_canvas(ctx, &self.notes_box.canvas);
-                    graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
-                    graphics::reset_canvas(ctx);
+                    self.should_clear_notes = true;
                 }
             },
+            None => {}
+        }
+        match move_to_make {
+            Some(k) => {
+                match self.game.execute_move(k) {
+                    Some(_) => {
+                        self.should_rerender_pieces = true;
+                    }
+                    None => self.should_rerender_pieces = false,
+                }
+                self.selected = None;
+            }
             None => {}
         }
         if self.should_rerender_pieces {
@@ -261,6 +299,13 @@ impl Scene for GameScene {
                 new_pieces.push(Box::new(GameScene::get_image(i, &mut self.assets, ctx)?));
             }
             let _ = std::mem::replace(&mut self.pieces_box.children, new_pieces);
+        }
+        if self.should_clear_notes {
+            // FIXME: don't use graphics in update
+            graphics::set_canvas(ctx, &self.notes_box.canvas);
+            graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
+            graphics::reset_canvas(ctx);
+            self.should_clear_notes = false;
         }
         Ok(Transition::None)
     }
