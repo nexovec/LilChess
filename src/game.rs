@@ -108,6 +108,7 @@ impl GameContainer {
             return false;
         }
         for piece in pcs.clone() {
+            // TODO: if the piece is unguarded and of the opposite color, return true
             if piece.0 == p.x && piece.1 == p.y {
                 return false;
             }
@@ -241,10 +242,12 @@ impl GameContainer {
                             // FIXME: DRY
                             // queen side castle
                             if self.get_piece_at_square(Vec2::new(4, 0)).is_some()
-                                && self.get_piece_at_square(Vec2::new(4, 0)).unwrap().2 == PieceType::KING
+                                && self.get_piece_at_square(Vec2::new(4, 0)).unwrap().2
+                                    == PieceType::KING
                                 && !self.has_moved(Vec2::new(4, 0))
                                 && self.get_piece_at_square(Vec2::new(0, 0)).is_some()
-                                && self.get_piece_at_square(Vec2::new(0, 0)).unwrap().2 == PieceType::ROOK
+                                && self.get_piece_at_square(Vec2::new(0, 0)).unwrap().2
+                                    == PieceType::ROOK
                                 && !self.has_moved(Vec2::new(0, 0))
                                 && self.get_piece_at_square(Vec2::new(1, 0)).is_none()
                                 && self.get_piece_at_square(Vec2::new(2, 0)).is_none()
@@ -256,10 +259,12 @@ impl GameContainer {
                             }
                             // king side castle
                             if self.get_piece_at_square(Vec2::new(4, 0)).is_some()
-                                && self.get_piece_at_square(Vec2::new(4, 0)).unwrap().2 == PieceType::KING
+                                && self.get_piece_at_square(Vec2::new(4, 0)).unwrap().2
+                                    == PieceType::KING
                                 && !self.has_moved(Vec2::new(4, 0))
                                 && self.get_piece_at_square(Vec2::new(7, 0)).is_some()
-                                && self.get_piece_at_square(Vec2::new(7, 0)).unwrap().2 == PieceType::ROOK
+                                && self.get_piece_at_square(Vec2::new(7, 0)).unwrap().2
+                                    == PieceType::ROOK
                                 && !self.has_moved(Vec2::new(7, 0))
                                 && self.get_piece_at_square(Vec2::new(5, 0)).is_none()
                                 && self.get_piece_at_square(Vec2::new(6, 0)).is_none()
@@ -271,10 +276,12 @@ impl GameContainer {
                         }
                         PlayerColor::BLACK => {
                             if self.get_piece_at_square(Vec2::new(4, 7)).is_some()
-                                && self.get_piece_at_square(Vec2::new(4, 7)).unwrap().2 == PieceType::KING
+                                && self.get_piece_at_square(Vec2::new(4, 7)).unwrap().2
+                                    == PieceType::KING
                                 && !self.has_moved(Vec2::new(4, 7))
                                 && self.get_piece_at_square(Vec2::new(0, 7)).is_some()
-                                && self.get_piece_at_square(Vec2::new(0, 7)).unwrap().2 == PieceType::ROOK
+                                && self.get_piece_at_square(Vec2::new(0, 7)).unwrap().2
+                                    == PieceType::ROOK
                                 && !self.has_moved(Vec2::new(0, 7))
                                 && self.get_piece_at_square(Vec2::new(1, 7)).is_none()
                                 && self.get_piece_at_square(Vec2::new(2, 7)).is_none()
@@ -286,10 +293,12 @@ impl GameContainer {
                             }
                             // king side castle
                             if self.get_piece_at_square(Vec2::new(4, 7)).is_some()
-                                && self.get_piece_at_square(Vec2::new(4, 7)).unwrap().2 == PieceType::KING
+                                && self.get_piece_at_square(Vec2::new(4, 7)).unwrap().2
+                                    == PieceType::KING
                                 && !self.has_moved(Vec2::new(4, 7))
                                 && self.get_piece_at_square(Vec2::new(7, 7)).is_some()
-                                && self.get_piece_at_square(Vec2::new(7, 7)).unwrap().2 == PieceType::ROOK
+                                && self.get_piece_at_square(Vec2::new(7, 7)).unwrap().2
+                                    == PieceType::ROOK
                                 && !self.has_moved(Vec2::new(7, 7))
                                 && self.get_piece_at_square(Vec2::new(5, 7)).is_none()
                                 && self.get_piece_at_square(Vec2::new(6, 7)).is_none()
@@ -380,40 +389,48 @@ impl GameContainer {
                 // TODO: promotions
                 // taking
                 match p.3 {
-                    PlayerColor::WHITE => match self.get_piece_at_square(Vec2::new(p.0 - 1, p.1 + 1)) {
-                        None => {}
-                        Some(i) => {
-                            if i.3 != p.3 {
-                                moves.push(Piece(p.0 - 1, p.1 + 1, PieceType::PAWN, p.3));
+                    PlayerColor::WHITE => {
+                        match self.get_piece_at_square(Vec2::new(p.0 - 1, p.1 + 1)) {
+                            None => {}
+                            Some(i) => {
+                                if i.3 != p.3 {
+                                    moves.push(Piece(p.0 - 1, p.1 + 1, PieceType::PAWN, p.3));
+                                }
                             }
                         }
-                    },
-                    PlayerColor::BLACK => match self.get_piece_at_square(Vec2::new(p.0 - 1, p.1 - 1)) {
-                        None => {}
-                        Some(i) => {
-                            if i.3 != p.3 {
-                                moves.push(Piece(p.0 - 1, p.1 - 1, PieceType::PAWN, p.3));
+                    }
+                    PlayerColor::BLACK => {
+                        match self.get_piece_at_square(Vec2::new(p.0 - 1, p.1 - 1)) {
+                            None => {}
+                            Some(i) => {
+                                if i.3 != p.3 {
+                                    moves.push(Piece(p.0 - 1, p.1 - 1, PieceType::PAWN, p.3));
+                                }
                             }
                         }
-                    },
+                    }
                 }
                 match p.3 {
-                    PlayerColor::WHITE => match self.get_piece_at_square(Vec2::new(p.0 + 1, p.1 + 1)) {
-                        None => {}
-                        Some(i) => {
-                            if i.3 != p.3 {
-                                moves.push(Piece(p.0 + 1, p.1 + 1, PieceType::PAWN, p.3));
+                    PlayerColor::WHITE => {
+                        match self.get_piece_at_square(Vec2::new(p.0 + 1, p.1 + 1)) {
+                            None => {}
+                            Some(i) => {
+                                if i.3 != p.3 {
+                                    moves.push(Piece(p.0 + 1, p.1 + 1, PieceType::PAWN, p.3));
+                                }
                             }
                         }
-                    },
-                    PlayerColor::BLACK => match self.get_piece_at_square(Vec2::new(p.0 + 1, p.1 - 1)) {
-                        None => {}
-                        Some(i) => {
-                            if i.3 != p.3 {
-                                moves.push(Piece(p.0 + 1, p.1 - 1, PieceType::PAWN, p.3));
+                    }
+                    PlayerColor::BLACK => {
+                        match self.get_piece_at_square(Vec2::new(p.0 + 1, p.1 - 1)) {
+                            None => {}
+                            Some(i) => {
+                                if i.3 != p.3 {
+                                    moves.push(Piece(p.0 + 1, p.1 - 1, PieceType::PAWN, p.3));
+                                }
                             }
                         }
-                    },
+                    }
                 }
                 // normal move
                 match p.3 {

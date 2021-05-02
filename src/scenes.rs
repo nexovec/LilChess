@@ -1,5 +1,3 @@
-use std::thread::current;
-
 use crate::game::*;
 use crate::game_types::*;
 use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};

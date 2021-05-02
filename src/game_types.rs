@@ -30,7 +30,11 @@ impl GameHistory {
                 // TODO: cheater or bug, do something fun
             }
         }
-        match new_state.pieces.iter().position(|x| x.0 == mv.to.0 && x.1 == mv.to.1) {
+        match new_state
+            .pieces
+            .iter()
+            .position(|x| x.0 == mv.to.0 && x.1 == mv.to.1)
+        {
             Some(k) => {
                 new_state.pieces.remove(k);
             }
