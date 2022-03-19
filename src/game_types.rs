@@ -48,39 +48,39 @@ impl GameHistory {
 #[derive(Clone)]
 pub struct BoardState {
     pub pieces: Vec<Piece>,
-    pub playerToMove: PlayerColor,
+    pub player_to_move: PlayerColor,
 }
 impl BoardState {
     #[allow(dead_code)]
     fn test_board_2() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
-        p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
-        p(Piece(6, 4, PieceType::KING, PlayerColor::WHITE));
-        p(Piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
-        p(Piece(3, 1, PieceType::QUEEN, PlayerColor::WHITE));
-        p(Piece(6, 2, PieceType::KING, PlayerColor::BLACK));
-        p(Piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
-        p(Piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
+        p(construct_piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(construct_piece(6, 4, PieceType::KING, PlayerColor::WHITE));
+        p(construct_piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
+        p(construct_piece(3, 1, PieceType::QUEEN, PlayerColor::WHITE));
+        p(construct_piece(6, 2, PieceType::KING, PlayerColor::BLACK));
+        p(construct_piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
+        p(construct_piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
         Ok(BoardState {
             pieces: pieces,
-            playerToMove: PlayerColor::WHITE,
+            player_to_move: PlayerColor::WHITE,
         })
     }
     fn test_board_1() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
-        p(Piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
-        p(Piece(6, 4, PieceType::KING, PlayerColor::BLACK));
-        p(Piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(Piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(Piece(3, 2, PieceType::QUEEN, PlayerColor::WHITE));
-        p(Piece(4, 0, PieceType::KING, PlayerColor::WHITE));
-        p(Piece(5, 3, PieceType::BISHOP, PlayerColor::BLACK));
-        p(Piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
+        p(construct_piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(construct_piece(6, 4, PieceType::KING, PlayerColor::BLACK));
+        p(construct_piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(construct_piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(construct_piece(3, 2, PieceType::QUEEN, PlayerColor::WHITE));
+        p(construct_piece(4, 0, PieceType::KING, PlayerColor::WHITE));
+        p(construct_piece(5, 3, PieceType::BISHOP, PlayerColor::BLACK));
+        p(construct_piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
         Ok(BoardState {
             pieces: pieces,
-            playerToMove: PlayerColor::WHITE,
+            player_to_move: PlayerColor::WHITE,
         })
     }
     #[allow(dead_code)]
@@ -88,30 +88,30 @@ impl BoardState {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
         for i in 0..8 {
-            p(Piece(i, 1, PieceType::PAWN, PlayerColor::WHITE));
+            p(construct_piece(i, 1, PieceType::PAWN, PlayerColor::WHITE));
         }
-        p(Piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(Piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(Piece(2, 0, PieceType::BISHOP, PlayerColor::WHITE));
-        p(Piece(5, 0, PieceType::BISHOP, PlayerColor::WHITE));
-        p(Piece(1, 0, PieceType::KNIGHT, PlayerColor::WHITE));
-        p(Piece(6, 0, PieceType::KNIGHT, PlayerColor::WHITE));
-        p(Piece(4, 0, PieceType::KING, PlayerColor::WHITE));
-        p(Piece(3, 0, PieceType::QUEEN, PlayerColor::WHITE));
+        p(construct_piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(construct_piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(construct_piece(2, 0, PieceType::BISHOP, PlayerColor::WHITE));
+        p(construct_piece(5, 0, PieceType::BISHOP, PlayerColor::WHITE));
+        p(construct_piece(1, 0, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(construct_piece(6, 0, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(construct_piece(4, 0, PieceType::KING, PlayerColor::WHITE));
+        p(construct_piece(3, 0, PieceType::QUEEN, PlayerColor::WHITE));
         for i in 0..8 {
-            p(Piece(i, 6, PieceType::PAWN, PlayerColor::BLACK));
+            p(construct_piece(i, 6, PieceType::PAWN, PlayerColor::BLACK));
         }
-        p(Piece(0, 7, PieceType::ROOK, PlayerColor::BLACK));
-        p(Piece(7, 7, PieceType::ROOK, PlayerColor::BLACK));
-        p(Piece(2, 7, PieceType::BISHOP, PlayerColor::BLACK));
-        p(Piece(5, 7, PieceType::BISHOP, PlayerColor::BLACK));
-        p(Piece(1, 7, PieceType::KNIGHT, PlayerColor::BLACK));
-        p(Piece(6, 7, PieceType::KNIGHT, PlayerColor::BLACK));
-        p(Piece(4, 7, PieceType::KING, PlayerColor::BLACK));
-        p(Piece(3, 7, PieceType::QUEEN, PlayerColor::BLACK));
+        p(construct_piece(0, 7, PieceType::ROOK, PlayerColor::BLACK));
+        p(construct_piece(7, 7, PieceType::ROOK, PlayerColor::BLACK));
+        p(construct_piece(2, 7, PieceType::BISHOP, PlayerColor::BLACK));
+        p(construct_piece(5, 7, PieceType::BISHOP, PlayerColor::BLACK));
+        p(construct_piece(1, 7, PieceType::KNIGHT, PlayerColor::BLACK));
+        p(construct_piece(6, 7, PieceType::KNIGHT, PlayerColor::BLACK));
+        p(construct_piece(4, 7, PieceType::KING, PlayerColor::BLACK));
+        p(construct_piece(3, 7, PieceType::QUEEN, PlayerColor::BLACK));
         Ok(BoardState {
             pieces: pieces,
-            playerToMove: PlayerColor::WHITE,
+            player_to_move: PlayerColor::WHITE,
         })
     }
 }
@@ -119,15 +119,15 @@ impl BoardState {
 pub struct Piece {
     pub x: i8,
     pub y: i8,
-    pub pieceType: PieceType,
+    pub piece_type: PieceType,
     pub color: PlayerColor,
 }
 
-pub fn Piece(x: i8, y: i8, pieceType: PieceType, color: PlayerColor) -> Piece {
+pub fn construct_piece(x: i8, y: i8, piece_type: PieceType, color: PlayerColor) -> Piece {
     Piece {
         x: x,
         y: y,
-        pieceType: pieceType,
+        piece_type,
         color: color,
     }
 }

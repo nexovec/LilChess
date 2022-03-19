@@ -147,7 +147,7 @@ impl GameScene {
         let i: &Texture;
         type P = PieceType;
         match piece.color {
-            PlayerColor::BLACK => match piece.pieceType {
+            PlayerColor::BLACK => match piece.piece_type {
                 P::BISHOP => i = &a.b_b,
                 P::KNIGHT => i = &a.b_n,
                 P::ROOK => i = &a.b_r,
@@ -155,7 +155,7 @@ impl GameScene {
                 P::QUEEN => i = &a.b_q,
                 P::PAWN => i = &a.b_p,
             },
-            PlayerColor::WHITE => match piece.pieceType {
+            PlayerColor::WHITE => match piece.piece_type {
                 P::BISHOP => i = &a.w_b,
                 P::KNIGHT => i = &a.w_n,
                 P::ROOK => i = &a.w_r,
@@ -215,28 +215,27 @@ impl Scene for GameScene {
         let mut move_to_make: Option<ChessMove> = None;
         match self.get_selected_square(ctx) {
             Some(i) => match self.game.get_piece_at_square(Vec2::new(i.x, i.y)) {
-                Some(p) => {
+                Some(selected_piece) => {
+                    if self.game.history.board_states[self.game.history.board_states.len() - 1].player_to_move != selected_piece.color {
+                        return Ok(Transition::None);
+                    }
                     match self.selected {
                         Some(currently_selected) => {
-                            let mut currently_selected_piece:Option<Piece> = None;
-                            if self.game.history.board_states[self.game.history.board_states.len() - 1].playerToMove == p.color {
-                                currently_selected_piece =
-                                    self.game.get_piece_at_square(currently_selected);
-                            }
+                            let currently_selected_piece = self.game.get_piece_at_square(currently_selected);
                             if currently_selected_piece.is_some(){
                                 let piece = currently_selected_piece.unwrap();
                                 let moves = self.game.get_legal_moves(piece);
                                 if moves
                                     .iter()
-                                    .position(|x| Vec2::new(x.x, x.y) == Vec2::new(p.x, p.y))
+                                    .position(|x| Vec2::new(x.x, x.y) == Vec2::new(selected_piece.x, selected_piece.y))
                                     .is_some()
                                 {
                                     move_to_make = Some(ChessMove {
                                         from: piece,
-                                        to: Piece(
-                                            p.x,
-                                            p.y,
-                                            piece.pieceType,
+                                        to: construct_piece(
+                                            selected_piece.x,
+                                            selected_piece.y,
+                                            piece.piece_type,
                                             piece.color,
                                         ),
                                     });
@@ -246,8 +245,8 @@ impl Scene for GameScene {
                         }
                         None => {
                             // TODO: ban focus on piece of opposite color
-                            let moves = self.game.get_legal_moves(p);
-                            self.selected = Some(Vec2::new(p.x, p.y).as_());
+                            let moves = self.game.get_legal_moves(selected_piece);
+                            self.selected = Some(Vec2::new(selected_piece.x, selected_piece.y).as_());
                             // FIXME: don't use graphics in update
                             graphics::set_canvas(ctx, &self.notes_box.canvas);
                             graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
@@ -273,7 +272,7 @@ impl Scene for GameScene {
                             if i == Vec2::new(mv.x, mv.y) {
                                 move_to_make = Some(ChessMove {
                                     from: piece,
-                                    to: Piece(mv.x, mv.y, piece.pieceType, piece.color),
+                                    to: construct_piece(mv.x, mv.y, piece.piece_type, piece.color),
                                 });
                                 break;
                             }
