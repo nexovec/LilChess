@@ -146,8 +146,8 @@ impl GameScene {
     fn get_image(piece: &Piece, a: &Assets, ctx: &mut Context) -> tetra::Result<UIImage> {
         let i: &Texture;
         type P = PieceType;
-        match piece.3 {
-            PlayerColor::BLACK => match piece.2 {
+        match piece.color {
+            PlayerColor::BLACK => match piece.pieceType {
                 P::BISHOP => i = &a.b_b,
                 P::KNIGHT => i = &a.b_n,
                 P::ROOK => i = &a.b_r,
@@ -155,7 +155,7 @@ impl GameScene {
                 P::QUEEN => i = &a.b_q,
                 P::PAWN => i = &a.b_p,
             },
-            PlayerColor::WHITE => match piece.2 {
+            PlayerColor::WHITE => match piece.pieceType {
                 P::BISHOP => i = &a.w_b,
                 P::KNIGHT => i = &a.w_n,
                 P::ROOK => i = &a.w_r,
@@ -167,8 +167,8 @@ impl GameScene {
         let back = UIImage::new(
             ctx,
             Vec2::new(
-                (piece.0 as i32 * 50) as f32,
-                ((7 - piece.1) as i32 * 50) as f32,
+                (piece.x as i32 * 50) as f32,
+                ((7 - piece.y) as i32 * 50) as f32,
             ),
             i.clone(),
             Box::new(|_: &mut _| Transition::None),
@@ -218,37 +218,43 @@ impl Scene for GameScene {
                 Some(p) => {
                     match self.selected {
                         Some(currently_selected) => {
-                            let currently_selected_piece =
-                                self.game.get_piece_at_square(currently_selected).unwrap();
-                            let moves = self.game.get_legal_moves(currently_selected_piece);
-                            if moves
-                                .iter()
-                                .position(|x| Vec2::new(x.0, x.1) == Vec2::new(p.0, p.1))
-                                .is_some()
-                            {
-                                move_to_make = Some(ChessMove {
-                                    from: currently_selected_piece,
-                                    to: Piece(
-                                        p.0,
-                                        p.1,
-                                        currently_selected_piece.2,
-                                        currently_selected_piece.3,
-                                    ),
-                                });
-                                self.should_clear_notes = true;
+                            let mut currently_selected_piece:Option<Piece> = None;
+                            if self.game.history.board_states[self.game.history.board_states.len() - 1].playerToMove == p.color {
+                                currently_selected_piece =
+                                    self.game.get_piece_at_square(currently_selected);
+                            }
+                            if currently_selected_piece.is_some(){
+                                let piece = currently_selected_piece.unwrap();
+                                let moves = self.game.get_legal_moves(piece);
+                                if moves
+                                    .iter()
+                                    .position(|x| Vec2::new(x.x, x.y) == Vec2::new(p.x, p.y))
+                                    .is_some()
+                                {
+                                    move_to_make = Some(ChessMove {
+                                        from: piece,
+                                        to: Piece(
+                                            p.x,
+                                            p.y,
+                                            piece.pieceType,
+                                            piece.color,
+                                        ),
+                                    });
+                                    self.should_clear_notes = true;
+                                }
                             }
                         }
                         None => {
                             // TODO: ban focus on piece of opposite color
                             let moves = self.game.get_legal_moves(p);
-                            self.selected = Some(Vec2::new(p.0, p.1).as_());
+                            self.selected = Some(Vec2::new(p.x, p.y).as_());
                             // FIXME: don't use graphics in update
                             graphics::set_canvas(ctx, &self.notes_box.canvas);
                             graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
                             for mv in moves {
                                 self.assets.green_square.draw(
                                     ctx,
-                                    Vec2::new(50 * mv.0 as i32, 400 - 50 * (mv.1 + 1) as i32).as_(),
+                                    Vec2::new(50 * mv.x as i32, 400 - 50 * (mv.y + 1) as i32).as_(),
                                 );
                             }
                             graphics::reset_canvas(ctx);
@@ -264,10 +270,10 @@ impl Scene for GameScene {
                             .unwrap();
                         let moves = self.game.get_legal_moves(piece);
                         for mv in moves {
-                            if i == Vec2::new(mv.0, mv.1) {
+                            if i == Vec2::new(mv.x, mv.y) {
                                 move_to_make = Some(ChessMove {
                                     from: piece,
-                                    to: Piece(mv.0, mv.1, piece.2, piece.3),
+                                    to: Piece(mv.x, mv.y, piece.pieceType, piece.color),
                                 });
                                 break;
                             }

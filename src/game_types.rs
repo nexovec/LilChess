@@ -18,6 +18,7 @@ impl GameHistory {
     /**
      * Assumes the move is already checked
      */
+    // TODO: sync BoardState.color with GameHistory.initial_p_to_move
     pub fn execute_move(&mut self, mv: ChessMove) {
         self.moves.push(mv);
         let mut new_state = self.board_states.last_mut().unwrap().clone();
@@ -33,7 +34,7 @@ impl GameHistory {
         match new_state
             .pieces
             .iter()
-            .position(|x| x.0 == mv.to.0 && x.1 == mv.to.1)
+            .position(|x| x.x == mv.to.x && x.y == mv.to.y)
         {
             Some(k) => {
                 new_state.pieces.remove(k);
@@ -47,6 +48,7 @@ impl GameHistory {
 #[derive(Clone)]
 pub struct BoardState {
     pub pieces: Vec<Piece>,
+    pub playerToMove: PlayerColor,
 }
 impl BoardState {
     #[allow(dead_code)]
@@ -60,7 +62,10 @@ impl BoardState {
         p(Piece(6, 2, PieceType::KING, PlayerColor::BLACK));
         p(Piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
         p(Piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
-        Ok(BoardState { pieces })
+        Ok(BoardState {
+            pieces: pieces,
+            playerToMove: PlayerColor::WHITE,
+        })
     }
     fn test_board_1() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
@@ -73,7 +78,10 @@ impl BoardState {
         p(Piece(4, 0, PieceType::KING, PlayerColor::WHITE));
         p(Piece(5, 3, PieceType::BISHOP, PlayerColor::BLACK));
         p(Piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
-        Ok(BoardState { pieces })
+        Ok(BoardState {
+            pieces: pieces,
+            playerToMove: PlayerColor::WHITE,
+        })
     }
     #[allow(dead_code)]
     fn default_board() -> tetra::Result<BoardState> {
@@ -101,11 +109,28 @@ impl BoardState {
         p(Piece(6, 7, PieceType::KNIGHT, PlayerColor::BLACK));
         p(Piece(4, 7, PieceType::KING, PlayerColor::BLACK));
         p(Piece(3, 7, PieceType::QUEEN, PlayerColor::BLACK));
-        Ok(BoardState { pieces })
+        Ok(BoardState {
+            pieces: pieces,
+            playerToMove: PlayerColor::WHITE,
+        })
     }
 }
 #[derive(Clone, Copy, PartialEq)]
-pub struct Piece(pub i8, pub i8, pub PieceType, pub PlayerColor);
+pub struct Piece {
+    pub x: i8,
+    pub y: i8,
+    pub pieceType: PieceType,
+    pub color: PlayerColor,
+}
+
+pub fn Piece(x: i8, y: i8, pieceType: PieceType, color: PlayerColor) -> Piece {
+    Piece {
+        x: x,
+        y: y,
+        pieceType: pieceType,
+        color: color,
+    }
+}
 #[derive(Clone, Copy)]
 pub struct ChessMove {
     pub from: Piece,
