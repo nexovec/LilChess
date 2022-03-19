@@ -18,6 +18,9 @@ impl GameHistory {
     /**
      * Assumes the move is already checked
      */
+    pub fn on_piece_taken(&mut self) -> () {
+        // TODO: print something nice to the screen
+    }
     // TODO: sync BoardState.color with GameHistory.initial_p_to_move
     pub fn execute_move(&mut self, mv: ChessMove) {
         self.moves.push(mv);
@@ -38,10 +41,18 @@ impl GameHistory {
         {
             Some(k) => {
                 new_state.pieces.remove(k);
+                self.on_piece_taken()
             }
             None => {}
         }
         new_state.pieces.push(mv.to);
+
+        if new_state.player_to_move == PlayerColor::WHITE {
+            new_state.player_to_move = PlayerColor::BLACK;
+        } else {
+            new_state.player_to_move = PlayerColor::WHITE;
+        }
+
         self.board_states.push(new_state);
     }
 }
@@ -49,8 +60,29 @@ impl GameHistory {
 pub struct BoardState {
     pub pieces: Vec<Piece>,
     pub player_to_move: PlayerColor,
+    pub white_can_castle_q: bool,
+    pub white_can_castle_k: bool,
+    pub black_can_castle_q: bool,
+    pub black_can_castle_k: bool,
 }
 impl BoardState {
+    pub fn create(
+        pieces: Vec<Piece>,
+        player_to_move: PlayerColor,
+        white_can_castle_q: bool,
+        white_can_castle_k: bool,
+        black_can_castle_q: bool,
+        black_can_castle_k: bool,
+    ) -> BoardState {
+        BoardState {
+            pieces: pieces,
+            player_to_move: player_to_move.to_owned(),
+            white_can_castle_q: white_can_castle_q,
+            white_can_castle_k: white_can_castle_k,
+            black_can_castle_q: black_can_castle_q,
+            black_can_castle_k: black_can_castle_k,
+        }
+    }
     #[allow(dead_code)]
     fn test_board_2() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
@@ -62,10 +94,14 @@ impl BoardState {
         p(construct_piece(6, 2, PieceType::KING, PlayerColor::BLACK));
         p(construct_piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
         p(construct_piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
-        Ok(BoardState {
-            pieces: pieces,
-            player_to_move: PlayerColor::WHITE,
-        })
+        Ok(BoardState::create(
+            pieces,
+            PlayerColor::WHITE,
+            false,
+            false,
+            false,
+            false,
+        ))
     }
     fn test_board_1() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
@@ -78,10 +114,14 @@ impl BoardState {
         p(construct_piece(4, 0, PieceType::KING, PlayerColor::WHITE));
         p(construct_piece(5, 3, PieceType::BISHOP, PlayerColor::BLACK));
         p(construct_piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
-        Ok(BoardState {
-            pieces: pieces,
-            player_to_move: PlayerColor::WHITE,
-        })
+        Ok(BoardState::create(
+            pieces,
+            PlayerColor::WHITE,
+            false,
+            false,
+            false,
+            false,
+        ))
     }
     #[allow(dead_code)]
     fn default_board() -> tetra::Result<BoardState> {
@@ -109,10 +149,14 @@ impl BoardState {
         p(construct_piece(6, 7, PieceType::KNIGHT, PlayerColor::BLACK));
         p(construct_piece(4, 7, PieceType::KING, PlayerColor::BLACK));
         p(construct_piece(3, 7, PieceType::QUEEN, PlayerColor::BLACK));
-        Ok(BoardState {
-            pieces: pieces,
-            player_to_move: PlayerColor::WHITE,
-        })
+        Ok(BoardState::create(
+            pieces,
+            PlayerColor::WHITE,
+            false,
+            false,
+            false,
+            false,
+        ))
     }
 }
 #[derive(Clone, Copy, PartialEq)]

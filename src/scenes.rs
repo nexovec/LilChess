@@ -216,18 +216,25 @@ impl Scene for GameScene {
         match self.get_selected_square(ctx) {
             Some(i) => match self.game.get_piece_at_square(Vec2::new(i.x, i.y)) {
                 Some(selected_piece) => {
-                    if self.game.history.board_states[self.game.history.board_states.len() - 1].player_to_move != selected_piece.color {
+                    if self.game.history.board_states[self.game.history.board_states.len() - 1]
+                        .player_to_move
+                        != selected_piece.color
+                    {
                         return Ok(Transition::None);
                     }
                     match self.selected {
                         Some(currently_selected) => {
-                            let currently_selected_piece = self.game.get_piece_at_square(currently_selected);
-                            if currently_selected_piece.is_some(){
+                            let currently_selected_piece =
+                                self.game.get_piece_at_square(currently_selected);
+                            if currently_selected_piece.is_some() {
                                 let piece = currently_selected_piece.unwrap();
                                 let moves = self.game.get_legal_moves(piece);
                                 if moves
                                     .iter()
-                                    .position(|x| Vec2::new(x.x, x.y) == Vec2::new(selected_piece.x, selected_piece.y))
+                                    .position(|x| {
+                                        Vec2::new(x.x, x.y)
+                                            == Vec2::new(selected_piece.x, selected_piece.y)
+                                    })
                                     .is_some()
                                 {
                                     move_to_make = Some(ChessMove {
@@ -244,9 +251,9 @@ impl Scene for GameScene {
                             }
                         }
                         None => {
-                            // TODO: ban focus on piece of opposite color
                             let moves = self.game.get_legal_moves(selected_piece);
-                            self.selected = Some(Vec2::new(selected_piece.x, selected_piece.y).as_());
+                            self.selected =
+                                Some(Vec2::new(selected_piece.x, selected_piece.y).as_());
                             // FIXME: don't use graphics in update
                             graphics::set_canvas(ctx, &self.notes_box.canvas);
                             graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
