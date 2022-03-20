@@ -1,18 +1,15 @@
 pub struct GameHistory {
     pub board_states: Vec<BoardState>,
-    pub moves: Vec<ChessMove>,
-    pub initial_p_to_move: PlayerColor,
+    pub moves: Vec<ChessMove>
 }
 impl GameHistory {
     pub fn new_game() -> tetra::Result<GameHistory> {
         // let board_states = vec![BoardState::default_board()?];
         let board_states = vec![BoardState::test_board_1()?];
         let moves = Vec::new();
-        let initial_p_to_move = PlayerColor::WHITE;
         Ok(GameHistory {
             board_states,
-            moves,
-            initial_p_to_move,
+            moves
         })
     }
     /**
@@ -20,12 +17,12 @@ impl GameHistory {
      */
     pub fn on_piece_taken(&mut self) -> () {
         // TODO: print something nice to the screen
+        println!("I've taken a piece");
     }
     // TODO: sync BoardState.color with GameHistory.initial_p_to_move
     pub fn execute_move(&mut self, mv: ChessMove) {
         self.moves.push(mv);
         let mut new_state = self.board_states.last_mut().unwrap().clone();
-        // TODO: abstract into closure
         match new_state.pieces.iter().position(|x| *x == mv.from) {
             Some(k) => {
                 new_state.pieces.remove(k);
@@ -193,4 +190,12 @@ pub enum PieceType {
 pub enum PlayerColor {
     BLACK,
     WHITE,
+}
+impl PlayerColor{
+    pub fn opposite(color: PlayerColor)->PlayerColor{
+        if color == PlayerColor::WHITE{
+            return PlayerColor::BLACK;
+        }
+        PlayerColor::WHITE
+    }
 }

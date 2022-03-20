@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "C:\\Users\\nexovec\\AppData\\Local\\Programs\\Python\\Python38\\python.exe"
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 160
 }

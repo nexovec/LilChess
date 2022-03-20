@@ -5,6 +5,123 @@ pub struct GameContainer {
     pub history: GameHistory,
 }
 
+fn can_queen_side_castle(container: &mut GameContainer, player_color: PlayerColor) -> bool {
+    // TODO: test
+    let mut y = 0;
+    if player_color == PlayerColor::BLACK {
+        y = 7;
+    }
+
+    if player_color == PlayerColor::WHITE
+        && container
+            .history
+            .board_states
+            .last()
+            .unwrap()
+            .white_can_castle_q
+            == false
+    {
+        return false;
+    }
+    if player_color == PlayerColor::BLACK
+        && container
+            .history
+            .board_states
+            .last()
+            .unwrap()
+            .black_can_castle_q
+            == false
+    {
+        return false;
+    }
+
+    // TODO: check for attacked squares.
+    if container
+        .history
+        .board_states
+        .last()
+        .unwrap()
+        .white_can_castle_q
+        && container.get_piece_at_square(Vec2::new(4, y)).is_some()
+        && container
+            .get_piece_at_square(Vec2::new(4, y))
+            .unwrap()
+            .piece_type
+            == PieceType::KING
+        && container.get_piece_at_square(Vec2::new(0, y)).is_some()
+        && container
+            .get_piece_at_square(Vec2::new(0, y))
+            .unwrap()
+            .piece_type
+            == PieceType::ROOK
+        && container.get_piece_at_square(Vec2::new(1, y)).is_none()
+        && container.get_piece_at_square(Vec2::new(2, y)).is_none()
+        && container.isnt_check(construct_piece(0, y, PieceType::KING, player_color))
+        && container.isnt_check(construct_piece(3, 0, PieceType::ROOK, player_color))
+    {
+        return true;
+    }
+    false
+}
+
+fn can_king_side_castle(container: &mut GameContainer, player_color: PlayerColor) -> bool {
+    // TODO: test
+    let mut y = 0;
+    if player_color == PlayerColor::BLACK {
+        y = 7;
+    }
+
+    if player_color == PlayerColor::WHITE
+        && container
+            .history
+            .board_states
+            .last()
+            .unwrap()
+            .white_can_castle_k
+            == false
+    {
+        return false;
+    }
+    if player_color == PlayerColor::BLACK
+        && container
+            .history
+            .board_states
+            .last()
+            .unwrap()
+            .black_can_castle_k
+            == false
+    {
+        return false;
+    }
+
+    // TODO: check for attacked squares.
+    if container
+        .history
+        .board_states
+        .last()
+        .unwrap()
+        .white_can_castle_q
+        && container.get_piece_at_square(Vec2::new(4, y)).is_some()
+        && container
+            .get_piece_at_square(Vec2::new(4, y))
+            .unwrap()
+            .piece_type
+            == PieceType::KING
+        && container.get_piece_at_square(Vec2::new(7, y)).is_some()
+        && container
+            .get_piece_at_square(Vec2::new(7, y))
+            .unwrap()
+            .piece_type
+            == PieceType::ROOK
+        && container.get_piece_at_square(Vec2::new(5, y)).is_none()
+        && container.get_piece_at_square(Vec2::new(6, y)).is_none()
+        && container.isnt_check(construct_piece(7, y, PieceType::KING, player_color))
+        && container.isnt_check(construct_piece(4, 0, PieceType::ROOK, player_color))
+    {
+        return true;
+    }
+    false
+}
 impl GameContainer {
     pub fn new() -> tetra::Result<GameContainer> {
         let history = GameHistory::new_game()?;
@@ -233,149 +350,6 @@ impl GameContainer {
                     if self.check_move(Vec2::new(temp.x, temp.y)) && self.isnt_check(temp) {
                         moves.push(temp);
                     }
-                }
-                fn can_queen_side_castle(
-                    container: &mut GameContainer,
-                    player_color: PlayerColor,
-                ) -> bool {
-                    // TODO: test
-                    let mut y = 0;
-                    if player_color == PlayerColor::BLACK {
-                        y = 7;
-                    }
-
-                    if player_color == PlayerColor::WHITE
-                        && container
-                            .history
-                            .board_states
-                            .last()
-                            .unwrap()
-                            .white_can_castle_q
-                            == false
-                    {
-                        return false;
-                    }
-                    if player_color == PlayerColor::BLACK
-                        && container
-                            .history
-                            .board_states
-                            .last()
-                            .unwrap()
-                            .black_can_castle_q
-                            == false
-                    {
-                        return false;
-                    }
-
-                    // TODO: check for attacked squares.
-                    if container
-                        .history
-                        .board_states
-                        .last()
-                        .unwrap()
-                        .white_can_castle_q
-                        && container.get_piece_at_square(Vec2::new(4, y)).is_some()
-                        && container
-                            .get_piece_at_square(Vec2::new(4, y))
-                            .unwrap()
-                            .piece_type
-                            == PieceType::KING
-                        && container.get_piece_at_square(Vec2::new(0, y)).is_some()
-                        && container
-                            .get_piece_at_square(Vec2::new(0, y))
-                            .unwrap()
-                            .piece_type
-                            == PieceType::ROOK
-                        && container.get_piece_at_square(Vec2::new(1, y)).is_none()
-                        && container.get_piece_at_square(Vec2::new(2, y)).is_none()
-                        && container.isnt_check(construct_piece(
-                            0,
-                            y,
-                            PieceType::KING,
-                            player_color,
-                        ))
-                        && container.isnt_check(construct_piece(
-                            3,
-                            0,
-                            PieceType::ROOK,
-                            player_color,
-                        ))
-                    {
-                        return true;
-                    }
-                    false
-                }
-
-                fn can_king_side_castle(
-                    container: &mut GameContainer,
-                    player_color: PlayerColor,
-                ) -> bool {
-                    // TODO: test
-                    let mut y = 0;
-                    if player_color == PlayerColor::BLACK {
-                        y = 7;
-                    }
-
-                    if player_color == PlayerColor::WHITE
-                        && container
-                            .history
-                            .board_states
-                            .last()
-                            .unwrap()
-                            .white_can_castle_k
-                            == false
-                    {
-                        return false;
-                    }
-                    if player_color == PlayerColor::BLACK
-                        && container
-                            .history
-                            .board_states
-                            .last()
-                            .unwrap()
-                            .black_can_castle_k
-                            == false
-                    {
-                        return false;
-                    }
-
-                    // TODO: check for attacked squares.
-                    if container
-                        .history
-                        .board_states
-                        .last()
-                        .unwrap()
-                        .white_can_castle_q
-                        && container.get_piece_at_square(Vec2::new(4, y)).is_some()
-                        && container
-                            .get_piece_at_square(Vec2::new(4, y))
-                            .unwrap()
-                            .piece_type
-                            == PieceType::KING
-                        && container.get_piece_at_square(Vec2::new(7, y)).is_some()
-                        && container
-                            .get_piece_at_square(Vec2::new(7, y))
-                            .unwrap()
-                            .piece_type
-                            == PieceType::ROOK
-                        && container.get_piece_at_square(Vec2::new(5, y)).is_none()
-                        && container.get_piece_at_square(Vec2::new(6, y)).is_none()
-                        && container.isnt_check(construct_piece(
-                            7,
-                            y,
-                            PieceType::KING,
-                            player_color,
-                        ))
-                        && container.isnt_check(construct_piece(
-                            4,
-                            0,
-                            PieceType::ROOK,
-                            player_color,
-                        ))
-                    {
-                        return true;
-                    }
-                    false
                 }
                 if self.isnt_check(p) {
                     match p.color {
