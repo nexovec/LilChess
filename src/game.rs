@@ -144,13 +144,16 @@ impl GameContainer {
         None
     }
     fn isnt_check(&mut self, p: Piece) -> bool {
+        // TODO: replace with BoardState::is_check()
         // NOTE: can be done simpler
         // FIXME: cloning here is stupid
         let pcs = self.current_pieces().clone();
         // TODO: use 2D array to precompute attacked squares
         for piece in pcs {
             if p.color == piece.color {
-            } else if piece.piece_type == PieceType::KING {
+                continue;
+            }
+            if piece.piece_type == PieceType::KING {
                 let moves = vec![
                     Vec2::new(piece.x, piece.y - 1),
                     Vec2::new(piece.x, piece.y + 1),
@@ -199,26 +202,23 @@ impl GameContainer {
         }
         true
     }
-    /*
-    checks whether a square is occupied or isn't on the chessboard
-    @return true means the square with given coordinates are plausible
-    */
-    fn check_move(&mut self, p: Vec2<i8>) -> bool {
+    fn check_move(&mut self, p: Vec2<i8>) -> MovePlausibility {
         // TODO: use 2D array to precompute unoccupied squares
         // FIXME: retarded clone() usage
         let pcs = self.current_pieces().clone();
         if !self.check_boundaries(p) {
-            return false;
+            return MovePlausibility::IMPOSSIBLE;
         }
         for piece in pcs.clone() {
             if piece.x == p.x && piece.y == p.y {
-                // TODO: get rid of GameContainer.initial_p_to_move
-                if piece.color == self.history.board_states.last().unwrap().player_to_move {
-                    return false;
+                if piece.color != self.history.board_states.last().unwrap().player_to_move {
+                    return MovePlausibility::TAKES;
+                } else {
+                    return MovePlausibility::IMPOSSIBLE;
                 }
             }
         }
-        true
+        MovePlausibility::MOVE
     }
     pub fn get_legal_moves(&mut self, p: Piece) -> Vec<Piece> {
         // FIXME: detect illegal positions, including ignored checks, pawns on first ranks, castles
@@ -227,86 +227,54 @@ impl GameContainer {
             PieceType::BISHOP => {
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.x + i, p.y + i);
-                    if !self.check_move(pos) {
-                        match self.get_piece_at_square(pos) {
-                            Some(i) => {
-                                if i.color != p.color {
-                                    moves.push(construct_piece(
-                                        pos.x,
-                                        pos.y,
-                                        PieceType::BISHOP,
-                                        p.color,
-                                    ));
-                                }
-                            }
-                            None => {}
-                        }
+                    let check = self.check_move(pos);
+                    if check == MovePlausibility::IMPOSSIBLE {
                         break;
-                    } else {
+                    }
+                    if check == MovePlausibility::TAKES || check == MovePlausibility::MOVE {
                         moves.push(construct_piece(pos.x, pos.y, PieceType::BISHOP, p.color));
+                    }
+                    if check == MovePlausibility::TAKES {
+                        break;
                     }
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.x + i, p.y - i);
-                    if !self.check_move(pos) {
-                        match self.get_piece_at_square(pos) {
-                            Some(i) => {
-                                if i.color != p.color {
-                                    moves.push(construct_piece(
-                                        pos.x,
-                                        pos.y,
-                                        PieceType::BISHOP,
-                                        p.color,
-                                    ));
-                                }
-                            }
-                            None => {}
-                        }
+                    let check = self.check_move(pos);
+                    if check == MovePlausibility::IMPOSSIBLE {
                         break;
-                    } else {
+                    }
+                    if check == MovePlausibility::TAKES || check == MovePlausibility::MOVE {
                         moves.push(construct_piece(pos.x, pos.y, PieceType::BISHOP, p.color));
+                    }
+                    if check == MovePlausibility::TAKES {
+                        break;
                     }
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.x - i, p.y + i);
-                    if !self.check_move(pos) {
-                        match self.get_piece_at_square(pos) {
-                            Some(i) => {
-                                if i.color != p.color {
-                                    moves.push(construct_piece(
-                                        pos.x,
-                                        pos.y,
-                                        PieceType::BISHOP,
-                                        p.color,
-                                    ));
-                                }
-                            }
-                            None => {}
-                        }
+                    let check = self.check_move(pos);
+                    if check == MovePlausibility::IMPOSSIBLE {
                         break;
-                    } else {
+                    }
+                    if check == MovePlausibility::TAKES || check == MovePlausibility::MOVE {
                         moves.push(construct_piece(pos.x, pos.y, PieceType::BISHOP, p.color));
+                    }
+                    if check == MovePlausibility::TAKES {
+                        break;
                     }
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.x - i, p.y - i);
-                    if !self.check_move(pos) {
-                        match self.get_piece_at_square(pos) {
-                            Some(i) => {
-                                if i.color != p.color {
-                                    moves.push(construct_piece(
-                                        pos.x,
-                                        pos.y,
-                                        PieceType::BISHOP,
-                                        p.color,
-                                    ));
-                                }
-                            }
-                            None => {}
-                        }
+                    let check = self.check_move(pos);
+                    if check == MovePlausibility::IMPOSSIBLE {
                         break;
-                    } else {
+                    }
+                    if check == MovePlausibility::TAKES || check == MovePlausibility::MOVE {
                         moves.push(construct_piece(pos.x, pos.y, PieceType::BISHOP, p.color));
+                    }
+                    if check == MovePlausibility::TAKES {
+                        break;
                     }
                 }
             }
@@ -347,30 +315,34 @@ impl GameContainer {
                 ];
                 for pos in positions {
                     let temp = construct_piece(pos.x, pos.y, PieceType::KING, p.color);
-                    if self.check_move(Vec2::new(temp.x, temp.y)) && self.isnt_check(temp) {
+                    if self.check_move(Vec2::new(temp.x, temp.y)) != MovePlausibility::IMPOSSIBLE
+                        && self.isnt_check(temp)
+                    {
                         moves.push(temp);
                     }
                 }
                 if self.isnt_check(p) {
                     match p.color {
                         PlayerColor::WHITE => {
-                            // FIXME: DRY
-
                             // queen side castle
                             if can_queen_side_castle(self, p.color) {
-                                moves.push(construct_piece(2, 0, PieceType::KING, p.color));
+                                moves.push(construct_piece(1, 0, PieceType::KING, p.color));
+                                moves.push(construct_piece(2, 0, PieceType::ROOK, p.color));
                             }
                             // king side castle
                             if can_king_side_castle(self, p.color) {
                                 moves.push(construct_piece(6, 0, PieceType::KING, p.color));
+                                moves.push(construct_piece(5, 0, PieceType::ROOK, p.color));
                             }
                         }
                         PlayerColor::BLACK => {
                             if can_queen_side_castle(self, p.color) {
-                                moves.push(construct_piece(2, 7, PieceType::KING, p.color));
+                                moves.push(construct_piece(1, 7, PieceType::KING, p.color));
+                                moves.push(construct_piece(2, 7, PieceType::ROOK, p.color));
                             }
                             if can_king_side_castle(self, p.color) {
                                 moves.push(construct_piece(6, 7, PieceType::KING, p.color));
+                                moves.push(construct_piece(5, 7, PieceType::ROOK, p.color));
                             }
                         }
                     }

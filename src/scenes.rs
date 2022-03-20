@@ -10,7 +10,6 @@ use tetra::{
     math::Vec2,
     Context,
 };
-
 pub enum Transition {
     Push(Box<dyn Scene>),
     Pop,

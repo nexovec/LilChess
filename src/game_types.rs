@@ -1,6 +1,6 @@
 pub struct GameHistory {
     pub board_states: Vec<BoardState>,
-    pub moves: Vec<ChessMove>
+    pub moves: Vec<ChessMove>,
 }
 impl GameHistory {
     pub fn new_game() -> tetra::Result<GameHistory> {
@@ -9,7 +9,7 @@ impl GameHistory {
         let moves = Vec::new();
         Ok(GameHistory {
             board_states,
-            moves
+            moves,
         })
     }
     /**
@@ -52,6 +52,12 @@ impl GameHistory {
 
         self.board_states.push(new_state);
     }
+}
+#[derive(PartialEq)]
+pub enum MovePlausibility {
+    MOVE,
+    TAKES,
+    IMPOSSIBLE,
 }
 #[derive(Clone)]
 pub struct BoardState {
@@ -119,6 +125,9 @@ impl BoardState {
             false,
             false,
         ))
+    }
+    fn is_check(&mut self) {
+        // TODO:
     }
     #[allow(dead_code)]
     fn default_board() -> tetra::Result<BoardState> {
@@ -191,9 +200,9 @@ pub enum PlayerColor {
     BLACK,
     WHITE,
 }
-impl PlayerColor{
-    pub fn opposite(color: PlayerColor)->PlayerColor{
-        if color == PlayerColor::WHITE{
+impl PlayerColor {
+    pub fn opposite(color: PlayerColor) -> PlayerColor {
+        if color == PlayerColor::WHITE {
             return PlayerColor::BLACK;
         }
         PlayerColor::WHITE
