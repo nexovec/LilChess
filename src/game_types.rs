@@ -223,7 +223,6 @@ impl BoardState {
         MovePlausibility::MOVE
     }
     pub fn is_check(&self) -> bool {
-        // TODO:
         false
     }
     #[allow(dead_code)]

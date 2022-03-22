@@ -14,9 +14,6 @@ impl GameContainer {
         self.history.execute_move(mv);
         Some(mv)
     }
-    pub fn current_pieces(&mut self) -> &Vec<Piece> {
-        &self.history.board_states.last_mut().unwrap().pieces
-    }
     pub fn get_board(&mut self) -> BoardState {
         self.history.board_states.last_mut().unwrap().clone()
     }
@@ -24,7 +21,7 @@ impl GameContainer {
         // TODO: replace with BoardState::is_check()
         // NOTE: can be done simpler
         // FIXME: cloning here is stupid
-        let pcs = self.current_pieces().clone();
+        let pcs = self.get_board().pieces;
         // TODO: use 2D array to precompute attacked squares
         for piece in pcs {
             if p.color == piece.color {
