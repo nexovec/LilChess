@@ -165,7 +165,7 @@ impl GameContainer {
                     Vec2::new(piece.x + 1, piece.y - 1),
                 ];
                 for mv in moves {
-                    if self.check_boundaries(mv) && mv.x == p.x && mv.y == p.y {
+                    if self.is_within_chessboard(mv) && mv.x == p.x && mv.y == p.y {
                         return false;
                     }
                 }
@@ -176,10 +176,10 @@ impl GameContainer {
                     -1
                 };
                 // TODO: optimize
-                if (self.check_boundaries(Vec2::new(piece.x + 1, piece.y + color_mult))
+                if (self.is_within_chessboard(Vec2::new(piece.x + 1, piece.y + color_mult))
                     && piece.x + 1 == p.x
                     && piece.y + color_mult == p.y)
-                    || (self.check_boundaries(Vec2::new(piece.x - 1, piece.y + color_mult))
+                    || (self.is_within_chessboard(Vec2::new(piece.x - 1, piece.y + color_mult))
                         && piece.x - 1 == p.x
                         && piece.y + color_mult == p.y)
                 {
@@ -195,18 +195,19 @@ impl GameContainer {
         }
         true
     }
-    fn check_boundaries(&mut self, p: Vec2<i8>) -> bool {
+    fn is_within_chessboard(&mut self, p: Vec2<i8>) -> bool {
         // TODO: cache
         if p.x >= 8 || p.y >= 8 || p.x < 0 || p.y < 0 {
             return false;
         }
         true
     }
-    fn check_move(&mut self, p: Vec2<i8>) -> MovePlausibility {
+    // TODO: use get_piece_at_square() like add_move_if_legal() does
+    fn is_move_plausible(&mut self, p: Vec2<i8>) -> MovePlausibility {
         // TODO: use 2D array to precompute unoccupied squares
         // FIXME: retarded clone() usage
         let pcs = self.current_pieces().clone();
-        if !self.check_boundaries(p) {
+        if !self.is_within_chessboard(p) {
             return MovePlausibility::IMPOSSIBLE;
         }
         for piece in pcs.clone() {
@@ -225,38 +226,39 @@ impl GameContainer {
         let mut moves = Vec::<Piece>::new();
         match p.piece_type {
             PieceType::BISHOP => {
-                let add_moves = |pos: Vec2<i8>, moves: &mut Vec<Piece>, c: &mut GameContainer| {
-                    let check = c.check_move(pos);
-                    if check == MovePlausibility::IMPOSSIBLE {
-                        return false;
-                    }
-                    moves.push(construct_piece(pos.x, pos.y, PieceType::BISHOP, p.color));
-                    if check == MovePlausibility::TAKES {
-                        return false;
-                    }
-                    return true;
-                };
+                let add_move_if_legal =
+                    |pos: Vec2<i8>, moves: &mut Vec<Piece>, c: &mut GameContainer| {
+                        let check = c.is_move_plausible(pos);
+                        if check == MovePlausibility::IMPOSSIBLE {
+                            return false;
+                        }
+                        moves.push(construct_piece(pos.x, pos.y, PieceType::BISHOP, p.color));
+                        if check == MovePlausibility::TAKES {
+                            return false;
+                        }
+                        true
+                    };
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.x + i, p.y + i);
-                    if !add_moves(pos, &mut moves, self) {
+                    if !add_move_if_legal(pos, &mut moves, self) {
                         break;
                     }
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.x + i, p.y - i);
-                    if !add_moves(pos, &mut moves, self) {
+                    if !add_move_if_legal(pos, &mut moves, self) {
                         break;
                     }
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.x - i, p.y + i);
-                    if !add_moves(pos, &mut moves, self) {
+                    if !add_move_if_legal(pos, &mut moves, self) {
                         break;
                     }
                 }
                 for i in 1..8 {
                     let pos = Vec2::<i8>::new(p.x - i, p.y - i);
-                    if !add_moves(pos, &mut moves, self) {
+                    if !add_move_if_legal(pos, &mut moves, self) {
                         break;
                     }
                 }
@@ -272,7 +274,7 @@ impl GameContainer {
                     Vec2::new(p.x + 1, p.y - 2),
                 ];
                 for pos in positions {
-                    if self.check_boundaries(pos) {
+                    if !self.is_within_chessboard(pos) {
                         continue;
                     }
                     let piece_there = self.get_piece_at_square(pos);
@@ -295,7 +297,8 @@ impl GameContainer {
                 ];
                 for pos in positions {
                     let temp = construct_piece(pos.x, pos.y, PieceType::KING, p.color);
-                    if self.check_move(Vec2::new(temp.x, temp.y)) != MovePlausibility::IMPOSSIBLE
+                    if self.is_move_plausible(Vec2::new(temp.x, temp.y))
+                        != MovePlausibility::IMPOSSIBLE
                         && self.isnt_check(temp)
                     {
                         moves.push(temp);
@@ -320,57 +323,58 @@ impl GameContainer {
                 // FIXME: what if it is check??
             }
             PieceType::ROOK => {
-                // TODO: abstract, simplify
-                for i in -7..8 {
-                    if i == 0 {
-                        continue;
+                let add_move_if_legal = |container: &mut GameContainer,
+                                         pos: Vec2<i8>,
+                                         moves: &mut Vec<Piece>,
+                                         p: Piece|
+                 -> MovePlausibility {
+                    if !container.is_within_chessboard(pos) {
+                        return MovePlausibility::IMPOSSIBLE;
                     }
-                    let pos = Vec2::new(p.x + i, p.y);
-                    if self.check_boundaries(pos) {
-                        match self.get_piece_at_square(pos) {
-                            Some(piece) => {
-                                if piece.color != p.color {
-                                    moves.push(construct_piece(
-                                        pos.x,
-                                        pos.y,
-                                        PieceType::ROOK,
-                                        p.color,
-                                    ));
-                                }
-                                break;
-                            }
-                            None => {
-                                moves.push(construct_piece(pos.x, pos.y, PieceType::ROOK, p.color))
-                            }
-                        }
-                        let piece_there = self.get_piece_at_square(pos);
-                        if piece_there.is_some() && piece_there.unwrap().color != p.color {
-                            // TODO:replace the above
-                        }
+                    let piece_there = container.get_piece_at_square(pos);
+                    if piece_there.is_some() && piece_there.unwrap().color == p.color {
+                        return MovePlausibility::IMPOSSIBLE;
+                    }
+                    moves.push(construct_piece(pos.x, pos.y, PieceType::ROOK, p.color));
+                    if piece_there.is_some() {
+                        return MovePlausibility::TAKES;
+                    }
+                    MovePlausibility::MOVE
+                };
+                for i in 1..8 {
+                    let pos = Vec2::new(p.x, p.y + i);
+                    let move_plausibility = add_move_if_legal(self, pos, &mut moves, p);
+                    if move_plausibility == MovePlausibility::IMPOSSIBLE
+                        || move_plausibility == MovePlausibility::TAKES
+                    {
+                        break;
                     }
                 }
-                for i in -7..8 {
-                    if i == 0 {
-                        continue;
+                for i in 1..8 {
+                    let pos = Vec2::new(p.x, p.y - i);
+                    let move_plausibility = add_move_if_legal(self, pos, &mut moves, p);
+                    if move_plausibility == MovePlausibility::IMPOSSIBLE
+                        || move_plausibility == MovePlausibility::TAKES
+                    {
+                        break;
                     }
-                    let pos = Vec2::new(p.x, p.y + i);
-                    if self.check_boundaries(pos) {
-                        match self.get_piece_at_square(pos) {
-                            Some(piece) => {
-                                if piece.color != p.color {
-                                    moves.push(construct_piece(
-                                        pos.x,
-                                        pos.y,
-                                        PieceType::ROOK,
-                                        p.color,
-                                    ));
-                                }
-                                break;
-                            }
-                            None => {
-                                moves.push(construct_piece(pos.x, pos.y, PieceType::ROOK, p.color))
-                            }
-                        }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::new(p.x + i, p.y);
+                    let move_plausibility = add_move_if_legal(self, pos, &mut moves, p);
+                    if move_plausibility == MovePlausibility::IMPOSSIBLE
+                        || move_plausibility == MovePlausibility::TAKES
+                    {
+                        break;
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::new(p.x - i, p.y);
+                    let move_plausibility = add_move_if_legal(self, pos, &mut moves, p);
+                    if move_plausibility == MovePlausibility::IMPOSSIBLE
+                        || move_plausibility == MovePlausibility::TAKES
+                    {
+                        break;
                     }
                 }
             }
