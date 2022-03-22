@@ -1,3 +1,9 @@
+use tetra::math::Vec2;
+#[inline(always)]
+pub fn is_within_chessboard(p: Vec2<i8>) -> bool {
+    // TODO: cache
+    !(p.x >= 8 || p.y >= 8 || p.x < 0 || p.y < 0)
+}
 pub struct GameHistory {
     pub board_states: Vec<BoardState>,
     pub moves: Vec<ChessMove>,
@@ -126,8 +132,99 @@ impl BoardState {
             false,
         ))
     }
-    fn is_check(&mut self) {
+    pub fn get_piece_at_square(&self, pos: Vec2<i8>) -> Option<Piece> {
+        for l in &self.pieces {
+            if l.x == pos.x && l.y == pos.y {
+                return Some(*l);
+            }
+        }
+        None
+    }
+    pub fn can_king_side_castle(&self, player_color: PlayerColor) -> bool {
+        // TODO: test
+        let y = match player_color {
+            PlayerColor::WHITE => 0,
+            PlayerColor::BLACK => 7,
+        };
+
+        if player_color == PlayerColor::WHITE && self.white_can_castle_k == false {
+            return false;
+        }
+        if player_color == PlayerColor::BLACK && !self.black_can_castle_k {
+            return false;
+        }
+        // TODO: check for attacked squares.
+        if self.white_can_castle_q
+            && self.get_piece_at_square(Vec2::new(4, y)).is_some()
+            && self
+                .get_piece_at_square(Vec2::new(4, y))
+                .unwrap()
+                .piece_type
+                == PieceType::KING
+            && self.get_piece_at_square(Vec2::new(7, y)).is_some()
+            && self
+                .get_piece_at_square(Vec2::new(7, y))
+                .unwrap()
+                .piece_type
+                == PieceType::ROOK
+            && self.get_piece_at_square(Vec2::new(5, y)).is_none()
+            && self.get_piece_at_square(Vec2::new(6, y)).is_none()
+        {
+            return true;
+        }
+        false
+    }
+    pub fn can_queen_side_castle(&self, player_color: PlayerColor) -> bool {
+        // TODO: test
+        let mut y = 0;
+        if player_color == PlayerColor::BLACK {
+            y = 7;
+        }
+
+        if player_color == PlayerColor::WHITE && self.white_can_castle_q == false {
+            return false;
+        }
+        if player_color == PlayerColor::BLACK
+        // TODO: replace with history.now() or GameContainer::position()
+            && self.black_can_castle_q
+                == false
+        {
+            return false;
+        }
+
+        // TODO: check for attacked squares.
+        let piece_there_ey = self.get_piece_at_square(Vec2::new(4, y));
+        let piece_there_ay = self.get_piece_at_square(Vec2::new(0, y));
+        if self.white_can_castle_q
+            && piece_there_ey.is_some()
+            && piece_there_ey.unwrap().piece_type == PieceType::KING
+            && piece_there_ay.is_some()
+            && piece_there_ay.unwrap().piece_type == PieceType::ROOK
+            && self.get_piece_at_square(Vec2::new(1, y)).is_none()
+            && self.get_piece_at_square(Vec2::new(2, y)).is_none()
+        {
+            return true;
+        }
+        false
+    }
+    pub fn is_move_plausible(&self, p: Vec2<i8>) -> MovePlausibility {
+        // TODO: use 2D array to precompute unoccupied squares
+        // FIXME: retarded clone() usage
+        if !is_within_chessboard(p) {
+            return MovePlausibility::IMPOSSIBLE;
+        }
+        if let Some(piece) = self.get_piece_at_square(p) {
+            if piece.color == self.player_to_move {
+                return MovePlausibility::IMPOSSIBLE;
+            }
+            return MovePlausibility::TAKES;
+        }
+
+        MovePlausibility::MOVE
+    }
+    pub fn is_check(&self) -> bool {
         // TODO:
+        false
     }
     #[allow(dead_code)]
     fn default_board() -> tetra::Result<BoardState> {

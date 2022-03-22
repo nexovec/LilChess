@@ -212,8 +212,9 @@ impl Scene for GameScene {
     }
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
         let mut move_to_make: Option<ChessMove> = None;
+        let board: BoardState = self.game.get_board();
         match self.get_selected_square(ctx) {
-            Some(i) => match self.game.get_piece_at_square(Vec2::new(i.x, i.y)) {
+            Some(i) => match board.get_piece_at_square(Vec2::new(i.x, i.y)) {
                 Some(selected_piece) => {
                     if self.game.history.board_states[self.game.history.board_states.len() - 1]
                         .player_to_move
@@ -224,7 +225,7 @@ impl Scene for GameScene {
                     match self.selected {
                         Some(currently_selected) => {
                             let currently_selected_piece =
-                                self.game.get_piece_at_square(currently_selected);
+                                board.get_piece_at_square(currently_selected);
                             if currently_selected_piece.is_some() {
                                 let piece = currently_selected_piece.unwrap();
                                 let moves = self.game.get_legal_moves(piece);
@@ -269,10 +270,7 @@ impl Scene for GameScene {
                 None => {
                     // detect move intent
                     if self.selected.is_some() {
-                        let piece = self
-                            .game
-                            .get_piece_at_square(self.selected.unwrap())
-                            .unwrap();
+                        let piece = board.get_piece_at_square(self.selected.unwrap()).unwrap();
                         let moves = self.game.get_legal_moves(piece);
                         for mv in moves {
                             if i == Vec2::new(mv.x, mv.y) {
