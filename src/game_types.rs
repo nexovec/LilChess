@@ -140,7 +140,7 @@ impl BoardState {
         }
         None
     }
-    pub fn can_king_side_castle(&self, player_color: PlayerColor) -> bool {
+    fn evaluate_can_king_side_castle(&self, player_color: PlayerColor) -> bool {
         // TODO: test
         let y = match player_color {
             PlayerColor::WHITE => 0,
@@ -174,7 +174,7 @@ impl BoardState {
         }
         false
     }
-    pub fn can_queen_side_castle(&self, player_color: PlayerColor) -> bool {
+    fn evaluate_can_queen_side_castle(&self, player_color: PlayerColor) -> bool {
         // TODO: test
         let mut y = 0;
         if player_color == PlayerColor::BLACK {
@@ -207,7 +207,7 @@ impl BoardState {
         }
         false
     }
-    pub fn is_move_plausible(&self, p: Vec2<i8>) -> MovePlausibility {
+    pub fn get_move_position_plausibility(&self, p: Vec2<i8>) -> MovePlausibility {
         // TODO: use 2D array to precompute unoccupied squares
         // FIXME: retarded clone() usage
         if !is_within_chessboard(p) {
@@ -223,6 +223,7 @@ impl BoardState {
         MovePlausibility::MOVE
     }
     pub fn is_check(&self) -> bool {
+        // TODO:
         false
     }
     #[allow(dead_code)]
@@ -281,6 +282,11 @@ pub fn construct_piece(x: i8, y: i8, piece_type: PieceType, color: PlayerColor) 
 pub struct ChessMove {
     pub from: Piece,
     pub to: Piece,
+}
+impl ChessMove {
+    pub fn new(from: Piece, to: Piece) -> ChessMove {
+        ChessMove { from: from, to: to }
+    }
 }
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum PieceType {

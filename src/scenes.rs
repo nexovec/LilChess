@@ -256,11 +256,8 @@ impl Scene for GameScene {
             let piece = board.get_piece_at_square(self.selected.unwrap()).unwrap();
             let moves = self.game.get_legal_moves(piece);
             for mv in moves {
-                if square == Vec2::new(mv.x, mv.y) {
-                    move_to_make = Some(ChessMove {
-                        from: piece,
-                        to: construct_piece(mv.x, mv.y, piece.piece_type, piece.color),
-                    });
+                if square == Vec2::new(mv.to.x, mv.to.y) {
+                    move_to_make = Some(mv);
                     break;
                 }
             }
@@ -283,7 +280,7 @@ impl Scene for GameScene {
             for mv in moves {
                 self.assets.green_square.draw(
                     ctx,
-                    Vec2::new(50 * mv.x as i32, 400 - 50 * (mv.y + 1) as i32).as_(),
+                    Vec2::new(50 * mv.to.x as i32, 400 - 50 * (mv.to.y + 1) as i32).as_(),
                 );
             }
             graphics::reset_canvas(ctx);
@@ -298,7 +295,9 @@ impl Scene for GameScene {
         let moves = self.game.get_legal_moves(piece);
         if moves
             .iter()
-            .position(|x| Vec2::new(x.x, x.y) == Vec2::new(selected_piece.x, selected_piece.y))
+            .position(|x| {
+                Vec2::new(x.to.x, x.to.y) == Vec2::new(selected_piece.x, selected_piece.y)
+            })
             .is_none()
         {
             return self.post_update(move_to_make, ctx);
