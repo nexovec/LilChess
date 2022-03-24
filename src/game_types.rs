@@ -8,6 +8,47 @@ pub struct GameHistory {
     pub board_states: Vec<BoardState>,
     pub moves: Vec<ChessMove>,
 }
+#[derive(PartialEq)]
+pub enum MovePlausibility {
+    MOVE,
+    TAKES,
+    IMPOSSIBLE,
+}
+#[derive(Clone)]
+pub struct BoardState {
+    pub pieces: Vec<Piece>,
+    pub player_to_move: PlayerColor,
+    pub white_can_castle_q: bool,
+    pub white_can_castle_k: bool,
+    pub black_can_castle_q: bool,
+    pub black_can_castle_k: bool,
+}
+#[derive(Clone, Copy, PartialEq)]
+pub struct Piece {
+    pub x: i8,
+    pub y: i8,
+    pub piece_type: PieceType,
+    pub color: PlayerColor,
+}
+#[derive(Clone, Copy)]
+pub struct ChessMove {
+    pub from: Piece,
+    pub to: Piece,
+}
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub enum PieceType {
+    PAWN,
+    ROOK,
+    BISHOP,
+    KNIGHT,
+    KING,
+    QUEEN,
+}
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub enum PlayerColor {
+    BLACK,
+    WHITE,
+}
 impl GameHistory {
     pub fn new_game() -> tetra::Result<GameHistory> {
         // let board_states = vec![BoardState::default_board()?];
@@ -59,21 +100,6 @@ impl GameHistory {
         self.board_states.push(new_state);
     }
 }
-#[derive(PartialEq)]
-pub enum MovePlausibility {
-    MOVE,
-    TAKES,
-    IMPOSSIBLE,
-}
-#[derive(Clone)]
-pub struct BoardState {
-    pub pieces: Vec<Piece>,
-    pub player_to_move: PlayerColor,
-    pub white_can_castle_q: bool,
-    pub white_can_castle_k: bool,
-    pub black_can_castle_q: bool,
-    pub black_can_castle_k: bool,
-}
 impl BoardState {
     pub fn create(
         pieces: Vec<Piece>,
@@ -96,13 +122,13 @@ impl BoardState {
     fn test_board_2() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
-        p(construct_piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
-        p(construct_piece(6, 4, PieceType::KING, PlayerColor::WHITE));
-        p(construct_piece(5, 3, PieceType::ROOK, PlayerColor::WHITE));
-        p(construct_piece(3, 1, PieceType::QUEEN, PlayerColor::WHITE));
-        p(construct_piece(6, 2, PieceType::KING, PlayerColor::BLACK));
-        p(construct_piece(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
-        p(construct_piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
+        p(Piece::new(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(Piece::new(6, 4, PieceType::KING, PlayerColor::WHITE));
+        p(Piece::new(5, 3, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece::new(3, 1, PieceType::QUEEN, PlayerColor::WHITE));
+        p(Piece::new(6, 2, PieceType::KING, PlayerColor::BLACK));
+        p(Piece::new(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
+        p(Piece::new(6, 6, PieceType::PAWN, PlayerColor::BLACK));
         Ok(BoardState::create(
             pieces,
             PlayerColor::WHITE,
@@ -115,14 +141,14 @@ impl BoardState {
     fn test_board_1() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
-        p(construct_piece(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
-        p(construct_piece(6, 4, PieceType::KING, PlayerColor::BLACK));
-        p(construct_piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(construct_piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(construct_piece(3, 2, PieceType::QUEEN, PlayerColor::WHITE));
-        p(construct_piece(4, 0, PieceType::KING, PlayerColor::WHITE));
-        p(construct_piece(5, 3, PieceType::BISHOP, PlayerColor::BLACK));
-        p(construct_piece(6, 6, PieceType::PAWN, PlayerColor::BLACK));
+        p(Piece::new(1, 4, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(Piece::new(6, 4, PieceType::KING, PlayerColor::BLACK));
+        p(Piece::new(0, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece::new(7, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece::new(3, 2, PieceType::QUEEN, PlayerColor::WHITE));
+        p(Piece::new(4, 0, PieceType::KING, PlayerColor::WHITE));
+        p(Piece::new(5, 3, PieceType::BISHOP, PlayerColor::BLACK));
+        p(Piece::new(6, 6, PieceType::PAWN, PlayerColor::BLACK));
         Ok(BoardState::create(
             pieces,
             PlayerColor::WHITE,
@@ -207,7 +233,7 @@ impl BoardState {
         }
         false
     }
-    pub fn get_move_position_plausibility(&self, p: Vec2<i8>) -> MovePlausibility {
+    fn get_move_position_plausibility(&self, p: Vec2<i8>) -> MovePlausibility {
         // TODO: use 2D array to precompute unoccupied squares
         // FIXME: retarded clone() usage
         if !is_within_chessboard(p) {
@@ -231,27 +257,27 @@ impl BoardState {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
         for i in 0..8 {
-            p(construct_piece(i, 1, PieceType::PAWN, PlayerColor::WHITE));
+            p(Piece::new(i, 1, PieceType::PAWN, PlayerColor::WHITE));
         }
-        p(construct_piece(0, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(construct_piece(7, 0, PieceType::ROOK, PlayerColor::WHITE));
-        p(construct_piece(2, 0, PieceType::BISHOP, PlayerColor::WHITE));
-        p(construct_piece(5, 0, PieceType::BISHOP, PlayerColor::WHITE));
-        p(construct_piece(1, 0, PieceType::KNIGHT, PlayerColor::WHITE));
-        p(construct_piece(6, 0, PieceType::KNIGHT, PlayerColor::WHITE));
-        p(construct_piece(4, 0, PieceType::KING, PlayerColor::WHITE));
-        p(construct_piece(3, 0, PieceType::QUEEN, PlayerColor::WHITE));
+        p(Piece::new(0, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece::new(7, 0, PieceType::ROOK, PlayerColor::WHITE));
+        p(Piece::new(2, 0, PieceType::BISHOP, PlayerColor::WHITE));
+        p(Piece::new(5, 0, PieceType::BISHOP, PlayerColor::WHITE));
+        p(Piece::new(1, 0, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(Piece::new(6, 0, PieceType::KNIGHT, PlayerColor::WHITE));
+        p(Piece::new(4, 0, PieceType::KING, PlayerColor::WHITE));
+        p(Piece::new(3, 0, PieceType::QUEEN, PlayerColor::WHITE));
         for i in 0..8 {
-            p(construct_piece(i, 6, PieceType::PAWN, PlayerColor::BLACK));
+            p(Piece::new(i, 6, PieceType::PAWN, PlayerColor::BLACK));
         }
-        p(construct_piece(0, 7, PieceType::ROOK, PlayerColor::BLACK));
-        p(construct_piece(7, 7, PieceType::ROOK, PlayerColor::BLACK));
-        p(construct_piece(2, 7, PieceType::BISHOP, PlayerColor::BLACK));
-        p(construct_piece(5, 7, PieceType::BISHOP, PlayerColor::BLACK));
-        p(construct_piece(1, 7, PieceType::KNIGHT, PlayerColor::BLACK));
-        p(construct_piece(6, 7, PieceType::KNIGHT, PlayerColor::BLACK));
-        p(construct_piece(4, 7, PieceType::KING, PlayerColor::BLACK));
-        p(construct_piece(3, 7, PieceType::QUEEN, PlayerColor::BLACK));
+        p(Piece::new(0, 7, PieceType::ROOK, PlayerColor::BLACK));
+        p(Piece::new(7, 7, PieceType::ROOK, PlayerColor::BLACK));
+        p(Piece::new(2, 7, PieceType::BISHOP, PlayerColor::BLACK));
+        p(Piece::new(5, 7, PieceType::BISHOP, PlayerColor::BLACK));
+        p(Piece::new(1, 7, PieceType::KNIGHT, PlayerColor::BLACK));
+        p(Piece::new(6, 7, PieceType::KNIGHT, PlayerColor::BLACK));
+        p(Piece::new(4, 7, PieceType::KING, PlayerColor::BLACK));
+        p(Piece::new(3, 7, PieceType::QUEEN, PlayerColor::BLACK));
         Ok(BoardState::create(
             pieces,
             PlayerColor::WHITE,
@@ -261,46 +287,277 @@ impl BoardState {
             false,
         ))
     }
-}
-#[derive(Clone, Copy, PartialEq)]
-pub struct Piece {
-    pub x: i8,
-    pub y: i8,
-    pub piece_type: PieceType,
-    pub color: PlayerColor,
-}
-
-pub fn construct_piece(x: i8, y: i8, piece_type: PieceType, color: PlayerColor) -> Piece {
-    Piece {
-        x: x,
-        y: y,
-        piece_type,
-        color: color,
+    fn add_move_if_legal(
+        &mut self,
+        piece_to: &Piece,
+        moves: &mut Vec<ChessMove>,
+        piece_from: &Piece,
+    ) -> bool {
+        let move_plausibility =
+            self.get_move_position_plausibility(Vec2::<i8>::new(piece_to.x, piece_to.y));
+        if move_plausibility == MovePlausibility::IMPOSSIBLE {
+            return false;
+        }
+        moves.push(ChessMove::new(piece_from.clone(), piece_to.clone()));
+        if move_plausibility == MovePlausibility::TAKES {
+            return false;
+        }
+        true
+    }
+    pub fn get_plausible_moves(&mut self, p: Piece) -> Vec<ChessMove> {
+        // TODO: return Vec<ChessMove> instead
+        // FIXME: detect illegal positions, including ignored checks, pawns on first ranks, castles
+        let mut moves = Vec::<ChessMove>::new();
+        let mut piece_to_prefab: Piece = p.clone();
+        match p.piece_type {
+            PieceType::BISHOP => {
+                for i in 1..8 {
+                    let pos = Vec2::<i8>::new(p.x + i, p.y + i);
+                    piece_to_prefab.x = pos.x;
+                    piece_to_prefab.y = pos.y;
+                    if !self.add_move_if_legal(&piece_to_prefab, &mut moves, &p) {
+                        break;
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::<i8>::new(p.x + i, p.y - i);
+                    if !self.add_move_if_legal(&piece_to_prefab, &mut moves, &p) {
+                        break;
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::<i8>::new(p.x - i, p.y + i);
+                    if !self.add_move_if_legal(&piece_to_prefab, &mut moves, &p) {
+                        break;
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::<i8>::new(p.x - i, p.y - i);
+                    if !self.add_move_if_legal(&piece_to_prefab, &mut moves, &p) {
+                        break;
+                    }
+                }
+            }
+            PieceType::KNIGHT => {
+                let positions = vec![
+                    Vec2::new(p.x + 2, p.y + 1),
+                    Vec2::new(p.x - 2, p.y + 1),
+                    Vec2::new(p.x + 2, p.y - 1),
+                    Vec2::new(p.x + 1, p.y + 2),
+                    Vec2::new(p.x - 1, p.y + 2),
+                    Vec2::new(p.x - 1, p.y - 2),
+                    Vec2::new(p.x + 1, p.y - 2),
+                ];
+                for pos in positions {
+                    if !is_within_chessboard(pos) {
+                        continue;
+                    }
+                    let piece_there = self.get_piece_at_square(pos);
+                    if piece_there.is_some() && piece_there.unwrap().color == p.color {
+                        continue;
+                    }
+                    let piece_to = Piece::new(pos.x, pos.y, PieceType::KNIGHT, p.color);
+                    moves.push(ChessMove::new(p, piece_to));
+                }
+            }
+            PieceType::KING => {
+                let positions = vec![
+                    Vec2::new(p.x, p.y + 1),
+                    Vec2::new(p.x, p.y - 1),
+                    Vec2::new(p.x + 1, p.y - 1),
+                    Vec2::new(p.x + 1, p.y + 1),
+                    Vec2::new(p.x - 1, p.y + 1),
+                    Vec2::new(p.x - 1, p.y - 1),
+                    Vec2::new(p.x + 1, p.y),
+                    Vec2::new(p.x - 1, p.y),
+                ];
+                for pos in positions {
+                    let piece_to = Piece::new(pos.x, pos.y, PieceType::KING, p.color);
+                    if self.get_move_position_plausibility(Vec2::new(piece_to.x, piece_to.y))
+                        != MovePlausibility::IMPOSSIBLE
+                    // NOTE: check check after this move?
+                    {
+                        moves.push(ChessMove::new(p, piece_to));
+                    }
+                }
+            }
+            PieceType::ROOK => {
+                for i in 1..8 {
+                    let pos = Vec2::new(p.x, p.y + i);
+                    piece_to_prefab.x = pos.x;
+                    piece_to_prefab.y = pos.y;
+                    if !self.add_move_if_legal(&piece_to_prefab, &mut moves, &p) {
+                        break;
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::new(p.x, p.y - i);
+                    piece_to_prefab.x = pos.x;
+                    piece_to_prefab.y = pos.y;
+                    if !self.add_move_if_legal(&piece_to_prefab, &mut moves, &p) {
+                        break;
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::new(p.x + i, p.y);
+                    piece_to_prefab.x = pos.x;
+                    piece_to_prefab.y = pos.y;
+                    if !self.add_move_if_legal(&piece_to_prefab, &mut moves, &p) {
+                        break;
+                    }
+                }
+                for i in 1..8 {
+                    let pos = Vec2::new(p.x - i, p.y);
+                    piece_to_prefab.x = pos.x;
+                    piece_to_prefab.y = pos.y;
+                    if !self.add_move_if_legal(&piece_to_prefab, &mut moves, &p) {
+                        break;
+                    }
+                }
+            }
+            PieceType::QUEEN => {
+                let bishop_moves =
+                    self.get_plausible_moves(Piece::new(p.x, p.y, PieceType::BISHOP, p.color));
+                let convert_move = |b_move: &ChessMove| {
+                    let piece_from = p;
+                    let piece_to =
+                        Piece::new(b_move.to.x, b_move.to.y, PieceType::QUEEN, b_move.to.color);
+                    ChessMove::new(piece_from, piece_to)
+                };
+                let queen_diagonal_moves = bishop_moves.iter().map(convert_move);
+                let rook_moves =
+                    self.get_plausible_moves(Piece::new(p.x, p.y, PieceType::ROOK, p.color));
+                let queen_straight_moves = rook_moves.iter().map(convert_move);
+                moves.append(&mut queen_diagonal_moves.collect());
+                moves.append(&mut queen_straight_moves.collect());
+            }
+            PieceType::PAWN => {
+                // TODO: en passant
+                // TODO: promotions
+                // taking
+                match p.color {
+                    PlayerColor::WHITE => {
+                        match self.get_piece_at_square(Vec2::new(p.x - 1, p.y + 1)) {
+                            None => {}
+                            Some(i) => {
+                                if i.color != p.color {
+                                    let piece_to =
+                                        Piece::new(p.x - 1, p.y + 1, PieceType::PAWN, p.color);
+                                    moves.push(ChessMove::new(p, piece_to));
+                                }
+                            }
+                        }
+                    }
+                    PlayerColor::BLACK => {
+                        match self.get_piece_at_square(Vec2::new(p.x - 1, p.y - 1)) {
+                            None => {}
+                            Some(i) => {
+                                if i.color != p.color {
+                                    let piece_to =
+                                        Piece::new(p.x - 1, p.y - 1, PieceType::PAWN, p.color);
+                                    moves.push(ChessMove::new(p, piece_to));
+                                }
+                            }
+                        }
+                    }
+                }
+                match p.color {
+                    PlayerColor::WHITE => {
+                        match self.get_piece_at_square(Vec2::new(p.x + 1, p.y + 1)) {
+                            None => {}
+                            Some(i) => {
+                                if i.color != p.color {
+                                    let piece_to =
+                                        Piece::new(p.x + 1, p.y + 1, PieceType::PAWN, p.color);
+                                    moves.push(ChessMove::new(p, piece_to));
+                                }
+                            }
+                        }
+                    }
+                    PlayerColor::BLACK => {
+                        match self.get_piece_at_square(Vec2::new(p.x + 1, p.y - 1)) {
+                            None => {}
+                            Some(i) => {
+                                if i.color != p.color {
+                                    let piece_to =
+                                        Piece::new(p.x + 1, p.y - 1, PieceType::PAWN, p.color);
+                                    moves.push(ChessMove::new(p, piece_to));
+                                }
+                            }
+                        }
+                    }
+                }
+                // normal move
+                match p.color {
+                    PlayerColor::WHITE => {
+                        match self.get_piece_at_square(Vec2::new(p.x, p.y + 1)) {
+                            None => {
+                                let piece_to = Piece::new(p.x, p.y + 1, p.piece_type, p.color);
+                                moves.push(ChessMove::new(p, piece_to));
+                                // double step
+                                if p.y == 1 {
+                                    match self.get_piece_at_square(Vec2::new(p.x, p.y + 2)) {
+                                        Some(_) => {}
+                                        None => {
+                                            let piece_to =
+                                                Piece::new(p.x, p.y + 2, PieceType::PAWN, p.color);
+                                            moves.push(ChessMove::new(p, piece_to));
+                                        }
+                                    }
+                                }
+                            }
+                            Some(_) => {}
+                        }
+                    }
+                    PlayerColor::BLACK => {
+                        match self.get_piece_at_square(Vec2::new(p.x, p.y - 1)) {
+                            None => {
+                                let piece_to = Piece::new(p.x, p.y - 1, p.piece_type, p.color);
+                                moves.push(ChessMove::new(p, piece_to));
+                                // double step
+                                if p.y == 6 {
+                                    match self.get_piece_at_square(Vec2::new(p.x, p.y - 2)) {
+                                        Some(_) => {}
+                                        None => {
+                                            let piece_to =
+                                                Piece::new(p.x, p.y - 2, PieceType::PAWN, p.color);
+                                            moves.push(ChessMove::new(p, piece_to));
+                                        }
+                                    }
+                                }
+                            }
+                            Some(_) => {}
+                        }
+                    }
+                }
+            }
+        }
+        moves
+    }
+    fn get_all_legal_moves(&mut self) -> Vec<ChessMove> {
+        let mut moves = Vec::<ChessMove>::new();
+        // FIXME: This is dumb but I'm lazy
+        let pieces = self.pieces.clone();
+        for piece in pieces {
+            moves.append(&mut self.get_plausible_moves(piece.clone()));
+        }
+        moves
     }
 }
-#[derive(Clone, Copy)]
-pub struct ChessMove {
-    pub from: Piece,
-    pub to: Piece,
+impl Piece {
+    pub fn new(x: i8, y: i8, piece_type: PieceType, color: PlayerColor) -> Piece {
+        Piece {
+            x: x,
+            y: y,
+            piece_type,
+            color: color,
+        }
+    }
 }
 impl ChessMove {
     pub fn new(from: Piece, to: Piece) -> ChessMove {
         ChessMove { from: from, to: to }
     }
-}
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum PieceType {
-    PAWN,
-    ROOK,
-    BISHOP,
-    KNIGHT,
-    KING,
-    QUEEN,
-}
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum PlayerColor {
-    BLACK,
-    WHITE,
 }
 impl PlayerColor {
     pub fn opposite(color: PlayerColor) -> PlayerColor {

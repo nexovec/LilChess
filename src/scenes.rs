@@ -147,6 +147,7 @@ impl GameScene {
         move_to_make: Option<ChessMove>,
         ctx: &mut Context,
     ) -> tetra::Result<Transition> {
+        let board = self.game.get_board();
         match move_to_make {
             Some(k) => {
                 match self.game.execute_move(k) {
@@ -161,7 +162,7 @@ impl GameScene {
         }
         if self.should_rerender_pieces {
             let mut new_pieces: Vec<Box<dyn Scene>> = Vec::new();
-            for i in self.game.get_board().pieces.iter() {
+            for i in board.pieces.iter() {
                 new_pieces.push(Box::new(GameScene::get_image(i, &mut self.assets, ctx)?));
             }
             let _ = std::mem::replace(&mut self.pieces_box.children, new_pieces);
@@ -245,7 +246,7 @@ impl Scene for GameScene {
     }
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
         let mut move_to_make: Option<ChessMove> = None;
-        let board: BoardState = self.game.get_board();
+        let mut board: BoardState = self.game.get_board();
         let square_opt = self.get_selected_square(ctx);
         if square_opt.is_none() {
             return self.post_update(move_to_make, ctx);
@@ -254,7 +255,7 @@ impl Scene for GameScene {
         let selected_piece_opt = board.get_piece_at_square(Vec2::new(square.x, square.y));
         if self.selected.is_some() && selected_piece_opt.is_none() {
             let piece = board.get_piece_at_square(self.selected.unwrap()).unwrap();
-            let moves = self.game.get_legal_moves(piece);
+            let moves = board.get_plausible_moves(piece);
             for mv in moves {
                 if square == Vec2::new(mv.to.x, mv.to.y) {
                     move_to_make = Some(mv);
@@ -268,11 +269,11 @@ impl Scene for GameScene {
             return self.post_update(move_to_make, ctx);
         }
         let selected_piece = selected_piece_opt.unwrap();
-        if self.game.get_board().player_to_move != selected_piece.color {
+        if board.player_to_move != selected_piece.color {
             return Ok(Transition::None);
         }
         if self.selected.is_none() {
-            let moves = self.game.get_legal_moves(selected_piece);
+            let moves = board.get_plausible_moves(selected_piece);
             self.selected = Some(Vec2::new(selected_piece.x, selected_piece.y).as_());
             // FIXME: don't use graphics in update
             graphics::set_canvas(ctx, &self.notes_box.canvas);
@@ -292,7 +293,7 @@ impl Scene for GameScene {
             return self.post_update(move_to_make, ctx);
         }
         let piece = currently_selected_piece.unwrap();
-        let moves = self.game.get_legal_moves(piece);
+        let moves = board.get_plausible_moves(piece);
         if moves
             .iter()
             .position(|x| {
@@ -304,7 +305,7 @@ impl Scene for GameScene {
         }
         move_to_make = Some(ChessMove {
             from: piece,
-            to: construct_piece(
+            to: Piece::new(
                 selected_piece.x,
                 selected_piece.y,
                 piece.piece_type,
