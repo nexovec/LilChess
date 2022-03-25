@@ -104,22 +104,24 @@ impl GameHistory {
     }
 }
 impl BoardState {
-    pub fn create(
-        pieces: Vec<Piece>,
-        player_to_move: PlayerColor,
-        white_can_castle_q: bool,
-        white_can_castle_k: bool,
-        black_can_castle_q: bool,
-        black_can_castle_k: bool,
-    ) -> BoardState {
-        BoardState {
+    pub fn new(pieces: Vec<Piece>, player_to_move: PlayerColor) -> BoardState {
+        let mut state = BoardState {
             pieces: pieces,
-            player_to_move: player_to_move.to_owned(),
-            white_can_castle_q: white_can_castle_q,
-            white_can_castle_k: white_can_castle_k,
-            black_can_castle_q: black_can_castle_q,
-            black_can_castle_k: black_can_castle_k,
-        }
+            player_to_move: player_to_move,
+            white_can_castle_q: false,
+            white_can_castle_k: false,
+            black_can_castle_q: false,
+            black_can_castle_k: false,
+        };
+        state.white_can_castle_q =
+            BoardState::evaluate_can_queen_side_castle(&state, PlayerColor::WHITE);
+        state.black_can_castle_q =
+            BoardState::evaluate_can_queen_side_castle(&state, PlayerColor::BLACK);
+        state.white_can_castle_k =
+            BoardState::evaluate_can_king_side_castle(&state, PlayerColor::WHITE);
+        state.black_can_castle_k =
+            BoardState::evaluate_can_king_side_castle(&state, PlayerColor::WHITE);
+        state
     }
     pub fn get_piece_at_square(&self, pos: Vec2<i8>) -> Option<Piece> {
         for l in &self.pieces {
@@ -135,13 +137,6 @@ impl BoardState {
             PlayerColor::WHITE => 0,
             PlayerColor::BLACK => 7,
         };
-
-        if player_color == PlayerColor::WHITE && self.white_can_castle_k == false {
-            return false;
-        }
-        if player_color == PlayerColor::BLACK && !self.black_can_castle_k {
-            return false;
-        }
         // TODO: check for attacked squares.
         if self.white_can_castle_q
             && self.get_piece_at_square(Vec2::new(4, y)).is_some()

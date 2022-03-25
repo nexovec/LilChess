@@ -261,10 +261,10 @@ impl Scene for GameScene {
         let mut board: BoardState = self.game.get_board();
         if let Some(newly_selected_square) = self.get_selected_square(ctx) {
             if let Some(selected_piece) = self.selected {
+                // make a move if you can here:
                 let moves = board.get_plausible_moves(selected_piece);
                 for avlbl_move in moves {
                     if avlbl_move.to.pos() == newly_selected_square {
-                        // TODO: make a move if you can here
                         move_to_make = Some(avlbl_move);
                         self.should_clear_notes = true;
                     }
@@ -274,17 +274,21 @@ impl Scene for GameScene {
                     .get_board()
                     .get_piece_at_square(newly_selected_square)
                 {
-                    if move_to_make.is_some() {
-                    } else if newly_selected_piece.color == selected_piece.color {
-                        // TODO: change focus to another piece if same color
-                        self.selected = board.get_piece_at_square(newly_selected_square);
-                        let new_moves = board.get_plausible_moves(newly_selected_piece);
-                        self.highlight_squares(&new_moves, ctx);
-                        self.should_rerender_pieces = true;
-                    } else {
-                        self.should_clear_notes = true;
-                        self.selected = None;
+                    if move_to_make.is_none() {
+                        if newly_selected_piece.color == selected_piece.color {
+                            // TODO: change focus to another piece if same color
+                            self.selected = board.get_piece_at_square(newly_selected_square);
+                            let new_moves = board.get_plausible_moves(newly_selected_piece);
+                            self.highlight_squares(&new_moves, ctx);
+                            self.should_rerender_pieces = true;
+                        } else {
+                            self.should_clear_notes = true;
+                            self.selected = None;
+                        }
                     }
+                } else {
+                    self.should_clear_notes = true;
+                    self.selected = None;
                 }
             } else {
                 if let Some(newly_selected_piece) = self
