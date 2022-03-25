@@ -77,7 +77,7 @@ struct GameScene {
     history_box: UIFlexBox,
     pieces_box: UIFlexBox,
     notes_box: UIFlexBox,
-    selected: Option<Vec2<i8>>,
+    selected: Option<Piece>,
     should_rerender_pieces: bool,
     should_clear_notes: bool,
 }
@@ -106,7 +106,7 @@ impl GameScene {
             Vec4::<f32>::new(0.0, 0.0, 0.0, 0.0),
             2,
         )?;
-        let game = GameContainer::new()?;
+        let game = GameContainer::new();
         let notes_box = UIFlexBox::new(
             ctx,
             board_size,
@@ -141,6 +141,17 @@ impl GameScene {
             should_rerender_pieces: true,
             should_clear_notes: true,
         })
+    }
+    fn highlight_squares(&mut self, moves: &Vec<ChessMove>, ctx: &mut Context) {
+        graphics::set_canvas(ctx, &self.notes_box.canvas);
+        graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
+        for mv in moves {
+            self.assets.green_square.draw(
+                ctx,
+                Vec2::new(50 * mv.to.x as i32, 400 - 50 * (mv.to.y + 1) as i32).as_(),
+            );
+        }
+        graphics::reset_canvas(ctx);
     }
     fn post_update(
         &mut self,
@@ -245,74 +256,51 @@ impl Scene for GameScene {
         Ok(Transition::None)
     }
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
+        // TODO: clean up
         let mut move_to_make: Option<ChessMove> = None;
         let mut board: BoardState = self.game.get_board();
-        let square_opt = self.get_selected_square(ctx);
-        if square_opt.is_none() {
-            return self.post_update(move_to_make, ctx);
-        }
-        let square = square_opt.unwrap();
-        let selected_piece_opt = board.get_piece_at_square(Vec2::new(square.x, square.y));
-        if self.selected.is_some() && selected_piece_opt.is_none() {
-            let piece = board.get_piece_at_square(self.selected.unwrap()).unwrap();
-            let moves = board.get_plausible_moves(piece);
-            for mv in moves {
-                if square == Vec2::new(mv.to.x, mv.to.y) {
-                    move_to_make = Some(mv);
-                    break;
+        if let Some(newly_selected_square) = self.get_selected_square(ctx) {
+            if let Some(selected_piece) = self.selected {
+                let moves = board.get_plausible_moves(selected_piece);
+                for avlbl_move in moves {
+                    if avlbl_move.to.pos() == newly_selected_square {
+                        // TODO: make a move if you can here
+                        move_to_make = Some(avlbl_move);
+                        self.should_clear_notes = true;
+                    }
+                }
+                if let Some(newly_selected_piece) = self
+                    .game
+                    .get_board()
+                    .get_piece_at_square(newly_selected_square)
+                {
+                    if move_to_make.is_some() {
+                    } else if newly_selected_piece.color == selected_piece.color {
+                        // TODO: change focus to another piece if same color
+                        self.selected = board.get_piece_at_square(newly_selected_square);
+                        let new_moves = board.get_plausible_moves(newly_selected_piece);
+                        self.highlight_squares(&new_moves, ctx);
+                        self.should_rerender_pieces = true;
+                    } else {
+                        self.should_clear_notes = true;
+                        self.selected = None;
+                    }
+                }
+            } else {
+                if let Some(newly_selected_piece) = self
+                    .game
+                    .get_board()
+                    .get_piece_at_square(newly_selected_square)
+                {
+                    if newly_selected_piece.color == board.player_to_move {
+                        self.selected = board.get_piece_at_square(newly_selected_square);
+                        let new_moves = board.get_plausible_moves(newly_selected_piece);
+                        self.highlight_squares(&new_moves, ctx);
+                        self.should_rerender_pieces = true;
+                    }
                 }
             }
         }
-        if selected_piece_opt.is_none() {
-            self.selected = None;
-            self.should_clear_notes = true;
-            return self.post_update(move_to_make, ctx);
-        }
-        let selected_piece = selected_piece_opt.unwrap();
-        if board.player_to_move != selected_piece.color {
-            return Ok(Transition::None);
-        }
-        if self.selected.is_none() {
-            let moves = board.get_plausible_moves(selected_piece);
-            self.selected = Some(Vec2::new(selected_piece.x, selected_piece.y).as_());
-            // FIXME: don't use graphics in update
-            graphics::set_canvas(ctx, &self.notes_box.canvas);
-            graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
-            for mv in moves {
-                self.assets.green_square.draw(
-                    ctx,
-                    Vec2::new(50 * mv.to.x as i32, 400 - 50 * (mv.to.y + 1) as i32).as_(),
-                );
-            }
-            graphics::reset_canvas(ctx);
-            return self.post_update(move_to_make, ctx);
-        }
-        let currently_selected = self.selected.unwrap();
-        let currently_selected_piece = board.get_piece_at_square(currently_selected);
-        if currently_selected_piece.is_none() {
-            return self.post_update(move_to_make, ctx);
-        }
-        let piece = currently_selected_piece.unwrap();
-        let moves = board.get_plausible_moves(piece);
-        if moves
-            .iter()
-            .position(|x| {
-                Vec2::new(x.to.x, x.to.y) == Vec2::new(selected_piece.x, selected_piece.y)
-            })
-            .is_none()
-        {
-            return self.post_update(move_to_make, ctx);
-        }
-        move_to_make = Some(ChessMove {
-            from: piece,
-            to: Piece::new(
-                selected_piece.x,
-                selected_piece.y,
-                piece.piece_type,
-                piece.color,
-            ),
-        });
-        self.should_clear_notes = true;
         self.post_update(move_to_make, ctx)
     }
 }
