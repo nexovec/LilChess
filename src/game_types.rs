@@ -123,6 +123,20 @@ impl BoardState {
             BoardState::evaluate_can_king_side_castle(&state, PlayerColor::WHITE);
         state
     }
+    pub fn after_move(&self, mv: &ChessMove) -> BoardState {
+        let mut pieces = Vec::<Piece>::new();
+        for i in &self.pieces {
+            if mv.to.pos() == i.pos() {
+                continue;
+            }
+            if mv.from.pos() == i.pos() {
+                continue;
+            }
+            pieces.push(i.clone());
+        }
+        pieces.push(mv.to);
+        BoardState::new(pieces, PlayerColor::opposite(self.player_to_move))
+    }
     pub fn get_piece_at_square(&self, pos: Vec2<i8>) -> Option<Piece> {
         for l in &self.pieces {
             if l.x == pos.x && l.y == pos.y {
@@ -206,13 +220,33 @@ impl BoardState {
 
         MovePlausibility::MOVE
     }
-    pub fn is_check(&self) -> bool {
+    pub fn is_check(&self, color: Option<PlayerColor>) -> bool {
         // TODO:
+        let moves = self.get_all_plausible_moves();
+        if color.is_none() {
+            return self.is_check(Some(self.player_to_move));
+        }
+        if let Some(king) = self
+            .pieces
+            .iter()
+            .find(|thing| thing.piece_type == PieceType::KING && thing.color == self.player_to_move)
+        {
+            let king_pos = king.pos();
+            for mv in moves {
+                if mv.to.pos() == king_pos
+                    && mv.to.color == PlayerColor::opposite(self.player_to_move)
+                {
+                    return true;
+                }
+            }
+        } else {
+            panic!("There is no king!");
+        }
         false
     }
     // returns boolean to assist with breaking out of loops where it's used.
     fn add_move_if_legal(
-        &mut self,
+        &self,
         piece_to: &Piece,
         moves: &mut Vec<ChessMove>,
         piece_from: &Piece,
@@ -228,136 +262,145 @@ impl BoardState {
         }
         true
     }
-    pub fn get_plausible_moves(&mut self, p: Piece) -> Vec<ChessMove> {
+    pub fn get_plausible_moves(&self, p: &Piece) -> Vec<ChessMove> {
         // TODO: return Vec<ChessMove> instead
         // FIXME: detect illegal positions, including ignored checks, pawns on first ranks, castles
         let mut moves = Vec::<ChessMove>::new();
         let mut in_piece: Piece = p.clone();
-        match p.piece_type {
+        match in_piece.piece_type {
             PieceType::BISHOP => {
                 for i in 1..8 {
-                    let pos = Vec2::<i8>::new(p.x + i, p.y + i);
+                    let pos = Vec2::<i8>::new(in_piece.x + i, in_piece.y + i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::<i8>::new(p.x + i, p.y - i);
+                    let pos = Vec2::<i8>::new(in_piece.x + i, in_piece.y - i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::<i8>::new(p.x - i, p.y + i);
+                    let pos = Vec2::<i8>::new(in_piece.x - i, in_piece.y + i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::<i8>::new(p.x - i, p.y - i);
+                    let pos = Vec2::<i8>::new(in_piece.x - i, in_piece.y - i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
                         break;
                     }
                 }
             }
             PieceType::KNIGHT => {
                 let positions = vec![
-                    Vec2::new(p.x + 2, p.y + 1),
-                    Vec2::new(p.x - 2, p.y + 1),
-                    Vec2::new(p.x + 2, p.y - 1),
-                    Vec2::new(p.x + 1, p.y + 2),
-                    Vec2::new(p.x - 1, p.y + 2),
-                    Vec2::new(p.x - 1, p.y - 2),
-                    Vec2::new(p.x + 1, p.y - 2),
+                    Vec2::new(in_piece.x + 2, in_piece.y + 1),
+                    Vec2::new(in_piece.x - 2, in_piece.y + 1),
+                    Vec2::new(in_piece.x + 2, in_piece.y - 1),
+                    Vec2::new(in_piece.x + 1, in_piece.y + 2),
+                    Vec2::new(in_piece.x - 1, in_piece.y + 2),
+                    Vec2::new(in_piece.x - 1, in_piece.y - 2),
+                    Vec2::new(in_piece.x + 1, in_piece.y - 2),
+                    Vec2::new(in_piece.x - 2, in_piece.y - 1),
                 ];
                 for pos in positions {
                     if !is_within_chessboard(pos) {
                         continue;
                     }
                     let piece_there = self.get_piece_at_square(pos);
-                    if piece_there.is_some() && piece_there.unwrap().color == p.color {
+                    if piece_there.is_some() && piece_there.unwrap().color == in_piece.color {
                         continue;
                     }
-                    let piece_to = Piece::new(pos.x, pos.y, PieceType::KNIGHT, p.color);
-                    moves.push(ChessMove::new(p, piece_to));
+                    let piece_to = Piece::new(pos.x, pos.y, PieceType::KNIGHT, in_piece.color);
+                    moves.push(ChessMove::new(in_piece, piece_to));
                 }
             }
             PieceType::KING => {
                 let positions = vec![
-                    Vec2::new(p.x, p.y + 1),
-                    Vec2::new(p.x, p.y - 1),
-                    Vec2::new(p.x + 1, p.y - 1),
-                    Vec2::new(p.x + 1, p.y + 1),
-                    Vec2::new(p.x - 1, p.y + 1),
-                    Vec2::new(p.x - 1, p.y - 1),
-                    Vec2::new(p.x + 1, p.y),
-                    Vec2::new(p.x - 1, p.y),
+                    Vec2::new(in_piece.x, in_piece.y + 1),
+                    Vec2::new(in_piece.x, in_piece.y - 1),
+                    Vec2::new(in_piece.x + 1, in_piece.y - 1),
+                    Vec2::new(in_piece.x + 1, in_piece.y + 1),
+                    Vec2::new(in_piece.x - 1, in_piece.y + 1),
+                    Vec2::new(in_piece.x - 1, in_piece.y - 1),
+                    Vec2::new(in_piece.x + 1, in_piece.y),
+                    Vec2::new(in_piece.x - 1, in_piece.y),
                 ];
                 for pos in positions {
-                    let piece_to = Piece::new(pos.x, pos.y, PieceType::KING, p.color);
+                    let piece_to = Piece::new(pos.x, pos.y, PieceType::KING, in_piece.color);
                     if self.get_move_position_plausibility(Vec2::new(piece_to.x, piece_to.y))
                         != MovePlausibility::IMPOSSIBLE
                     // NOTE: check check after this move?
                     {
-                        moves.push(ChessMove::new(p, piece_to));
+                        moves.push(ChessMove::new(in_piece, piece_to));
                     }
                 }
             }
             PieceType::ROOK => {
                 for i in 1..8 {
-                    let pos = Vec2::new(p.x, p.y + i);
+                    let pos = Vec2::new(in_piece.x, in_piece.y + i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::new(p.x, p.y - i);
+                    let pos = Vec2::new(in_piece.x, in_piece.y - i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::new(p.x + i, p.y);
+                    let pos = Vec2::new(in_piece.x + i, in_piece.y);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::new(p.x - i, p.y);
+                    let pos = Vec2::new(in_piece.x - i, in_piece.y);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
                         break;
                     }
                 }
             }
             PieceType::QUEEN => {
-                let bishop_moves =
-                    self.get_plausible_moves(Piece::new(p.x, p.y, PieceType::BISHOP, p.color));
+                let bishop_moves = self.get_plausible_moves(&Piece::new(
+                    in_piece.x,
+                    in_piece.y,
+                    PieceType::BISHOP,
+                    in_piece.color,
+                ));
                 // TODO: replace with for loop
                 let convert_move = |b_move: &ChessMove| {
-                    let piece_from = p;
+                    let piece_from = in_piece;
                     let piece_to =
                         Piece::new(b_move.to.x, b_move.to.y, PieceType::QUEEN, b_move.to.color);
                     ChessMove::new(piece_from, piece_to)
                 };
                 let queen_diagonal_moves = bishop_moves.iter().map(convert_move);
-                let rook_moves =
-                    self.get_plausible_moves(Piece::new(p.x, p.y, PieceType::ROOK, p.color));
+                let rook_moves = self.get_plausible_moves(&Piece::new(
+                    in_piece.x,
+                    in_piece.y,
+                    PieceType::ROOK,
+                    in_piece.color,
+                ));
                 let queen_straight_moves = rook_moves.iter().map(convert_move);
                 moves.append(&mut queen_diagonal_moves.collect());
                 moves.append(&mut queen_straight_moves.collect());
@@ -366,73 +409,100 @@ impl BoardState {
                 // TODO: en passant
                 // TODO: promotions
                 // taking
-                match p.color {
+                match in_piece.color {
                     PlayerColor::WHITE => {
-                        match self.get_piece_at_square(Vec2::new(p.x - 1, p.y + 1)) {
+                        match self.get_piece_at_square(Vec2::new(in_piece.x - 1, in_piece.y + 1)) {
                             None => {}
                             Some(i) => {
-                                if i.color != p.color {
-                                    let piece_to =
-                                        Piece::new(p.x - 1, p.y + 1, PieceType::PAWN, p.color);
-                                    moves.push(ChessMove::new(p, piece_to));
+                                if i.color != in_piece.color {
+                                    let piece_to = Piece::new(
+                                        in_piece.x - 1,
+                                        in_piece.y + 1,
+                                        PieceType::PAWN,
+                                        in_piece.color,
+                                    );
+                                    moves.push(ChessMove::new(in_piece, piece_to));
                                 }
                             }
                         }
                     }
                     PlayerColor::BLACK => {
-                        match self.get_piece_at_square(Vec2::new(p.x - 1, p.y - 1)) {
+                        match self.get_piece_at_square(Vec2::new(in_piece.x - 1, in_piece.y - 1)) {
                             None => {}
                             Some(i) => {
-                                if i.color != p.color {
-                                    let piece_to =
-                                        Piece::new(p.x - 1, p.y - 1, PieceType::PAWN, p.color);
-                                    moves.push(ChessMove::new(p, piece_to));
+                                if i.color != in_piece.color {
+                                    let piece_to = Piece::new(
+                                        in_piece.x - 1,
+                                        in_piece.y - 1,
+                                        PieceType::PAWN,
+                                        in_piece.color,
+                                    );
+                                    moves.push(ChessMove::new(in_piece, piece_to));
                                 }
                             }
                         }
                     }
                 }
-                match p.color {
+                match in_piece.color {
                     PlayerColor::WHITE => {
-                        match self.get_piece_at_square(Vec2::new(p.x + 1, p.y + 1)) {
+                        match self.get_piece_at_square(Vec2::new(in_piece.x + 1, in_piece.y + 1)) {
                             None => {}
                             Some(i) => {
-                                if i.color != p.color {
-                                    let piece_to =
-                                        Piece::new(p.x + 1, p.y + 1, PieceType::PAWN, p.color);
-                                    moves.push(ChessMove::new(p, piece_to));
+                                if i.color != in_piece.color {
+                                    let piece_to = Piece::new(
+                                        in_piece.x + 1,
+                                        in_piece.y + 1,
+                                        PieceType::PAWN,
+                                        in_piece.color,
+                                    );
+                                    moves.push(ChessMove::new(in_piece, piece_to));
                                 }
                             }
                         }
                     }
                     PlayerColor::BLACK => {
-                        match self.get_piece_at_square(Vec2::new(p.x + 1, p.y - 1)) {
+                        match self.get_piece_at_square(Vec2::new(in_piece.x + 1, in_piece.y - 1)) {
                             None => {}
                             Some(i) => {
-                                if i.color != p.color {
-                                    let piece_to =
-                                        Piece::new(p.x + 1, p.y - 1, PieceType::PAWN, p.color);
-                                    moves.push(ChessMove::new(p, piece_to));
+                                if i.color != in_piece.color {
+                                    let piece_to = Piece::new(
+                                        in_piece.x + 1,
+                                        in_piece.y - 1,
+                                        PieceType::PAWN,
+                                        in_piece.color,
+                                    );
+                                    moves.push(ChessMove::new(in_piece, piece_to));
                                 }
                             }
                         }
                     }
                 }
                 // normal move
-                match p.color {
+                match in_piece.color {
                     PlayerColor::WHITE => {
-                        match self.get_piece_at_square(Vec2::new(p.x, p.y + 1)) {
+                        match self.get_piece_at_square(Vec2::new(in_piece.x, in_piece.y + 1)) {
                             None => {
-                                let piece_to = Piece::new(p.x, p.y + 1, p.piece_type, p.color);
-                                moves.push(ChessMove::new(p, piece_to));
+                                let piece_to = Piece::new(
+                                    in_piece.x,
+                                    in_piece.y + 1,
+                                    in_piece.piece_type,
+                                    in_piece.color,
+                                );
+                                moves.push(ChessMove::new(in_piece, piece_to));
                                 // double step
-                                if p.y == 1 {
-                                    match self.get_piece_at_square(Vec2::new(p.x, p.y + 2)) {
+                                if in_piece.y == 1 {
+                                    match self
+                                        .get_piece_at_square(Vec2::new(in_piece.x, in_piece.y + 2))
+                                    {
                                         Some(_) => {}
                                         None => {
-                                            let piece_to =
-                                                Piece::new(p.x, p.y + 2, PieceType::PAWN, p.color);
-                                            moves.push(ChessMove::new(p, piece_to));
+                                            let piece_to = Piece::new(
+                                                in_piece.x,
+                                                in_piece.y + 2,
+                                                PieceType::PAWN,
+                                                in_piece.color,
+                                            );
+                                            moves.push(ChessMove::new(in_piece, piece_to));
                                         }
                                     }
                                 }
@@ -441,18 +511,29 @@ impl BoardState {
                         }
                     }
                     PlayerColor::BLACK => {
-                        match self.get_piece_at_square(Vec2::new(p.x, p.y - 1)) {
+                        match self.get_piece_at_square(Vec2::new(in_piece.x, in_piece.y - 1)) {
                             None => {
-                                let piece_to = Piece::new(p.x, p.y - 1, p.piece_type, p.color);
-                                moves.push(ChessMove::new(p, piece_to));
+                                let piece_to = Piece::new(
+                                    in_piece.x,
+                                    in_piece.y - 1,
+                                    in_piece.piece_type,
+                                    in_piece.color,
+                                );
+                                moves.push(ChessMove::new(in_piece, piece_to));
                                 // double step
-                                if p.y == 6 {
-                                    match self.get_piece_at_square(Vec2::new(p.x, p.y - 2)) {
+                                if in_piece.y == 6 {
+                                    match self
+                                        .get_piece_at_square(Vec2::new(in_piece.x, in_piece.y - 2))
+                                    {
                                         Some(_) => {}
                                         None => {
-                                            let piece_to =
-                                                Piece::new(p.x, p.y - 2, PieceType::PAWN, p.color);
-                                            moves.push(ChessMove::new(p, piece_to));
+                                            let piece_to = Piece::new(
+                                                in_piece.x,
+                                                in_piece.y - 2,
+                                                PieceType::PAWN,
+                                                in_piece.color,
+                                            );
+                                            moves.push(ChessMove::new(in_piece, piece_to));
                                         }
                                     }
                                 }
@@ -465,14 +546,25 @@ impl BoardState {
         }
         moves
     }
-    fn get_all_plausible_moves(&mut self) -> Vec<ChessMove> {
+    fn get_all_plausible_moves(&self) -> Vec<ChessMove> {
         let mut moves = Vec::<ChessMove>::new();
-        // FIXME: This is dumb but I'm lazy
-        let pieces = self.pieces.clone();
+        let pieces = &self.pieces;
         for piece in pieces {
-            moves.append(&mut self.get_plausible_moves(piece.clone()));
+            moves.append(&mut self.get_plausible_moves(&piece));
         }
         moves
+    }
+    fn get_legal_moves(&self, p: &Piece) -> Vec<ChessMove> {
+        // TODO:
+        let plausible_moves: Vec<ChessMove> = self.get_plausible_moves(p);
+        let legal_moves: Vec<ChessMove> = plausible_moves
+            .iter()
+            .filter(|mv: &&ChessMove| -> bool {
+                self.after_move(*mv).is_check(Some(self.player_to_move))
+            })
+            .cloned()
+            .collect();
+        legal_moves
     }
 }
 impl Piece {
