@@ -270,34 +270,34 @@ impl BoardState {
         match in_piece.piece_type {
             PieceType::BISHOP => {
                 for i in 1..8 {
-                    let pos = Vec2::<i8>::new(in_piece.x + i, in_piece.y + i);
+                    let pos = Vec2::<i8>::new(p.x + i, p.y + i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::<i8>::new(in_piece.x + i, in_piece.y - i);
+                    let pos = Vec2::<i8>::new(p.x + i, p.y - i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::<i8>::new(in_piece.x - i, in_piece.y + i);
+                    let pos = Vec2::<i8>::new(p.x - i, p.y + i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
                         break;
                     }
                 }
                 for i in 1..8 {
-                    let pos = Vec2::<i8>::new(in_piece.x - i, in_piece.y - i);
+                    let pos = Vec2::<i8>::new(p.x - i, p.y - i);
                     in_piece.x = pos.x;
                     in_piece.y = pos.y;
-                    if !self.add_move_if_legal(&in_piece, &mut moves, &in_piece) {
+                    if !self.add_move_if_legal(&in_piece, &mut moves, &p) {
                         break;
                     }
                 }
