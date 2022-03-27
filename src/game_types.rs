@@ -18,10 +18,9 @@ pub enum MovePlausibility {
 pub struct BoardState {
     pub pieces: Vec<Piece>,
     pub player_to_move: PlayerColor,
-    pub white_can_castle_q: bool,
-    pub white_can_castle_k: bool,
-    pub black_can_castle_q: bool,
-    pub black_can_castle_k: bool,
+    pub castling_rules: CastlingRules,
+    pub can_castle_k_this_move: bool,
+    pub can_castle_q_this_move: bool,
 }
 #[derive(Clone, Copy, PartialEq)]
 pub struct Piece {
@@ -34,6 +33,13 @@ pub struct Piece {
 pub struct ChessMove {
     pub from: Piece,
     pub to: Piece,
+}
+#[derive(Clone)]
+pub struct CastlingRules {
+    pub white_can_still_castle_q: bool,
+    pub white_can_still_castle_k: bool,
+    pub black_can_still_castle_q: bool,
+    pub black_can_still_castle_k: bool,
 }
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum PieceType {
@@ -48,6 +54,21 @@ pub enum PieceType {
 pub enum PlayerColor {
     BLACK,
     WHITE,
+}
+impl CastlingRules {
+    pub fn new(
+        white_can_still_castle_q: bool,
+        white_can_still_castle_k: bool,
+        black_can_still_castle_q: bool,
+        black_can_still_castle_k: bool,
+    ) -> CastlingRules {
+        CastlingRules {
+            white_can_still_castle_q: white_can_still_castle_q,
+            white_can_still_castle_k: white_can_still_castle_k,
+            black_can_still_castle_q: black_can_still_castle_q,
+            black_can_still_castle_k: black_can_still_castle_k,
+        }
+    }
 }
 impl GameHistory {
     pub fn new(board_states: Vec<BoardState>, moves: Option<Vec<ChessMove>>) -> GameHistory {
@@ -103,26 +124,25 @@ impl GameHistory {
         true
     }
 }
+
 impl BoardState {
-    pub fn new(pieces: Vec<Piece>, player_to_move: PlayerColor) -> BoardState {
+    pub fn new(
+        pieces: Vec<Piece>,
+        player_to_move: PlayerColor,
+        castling_rules: CastlingRules,
+    ) -> BoardState {
         let mut state = BoardState {
             pieces: pieces,
             player_to_move: player_to_move,
-            white_can_castle_q: false,
-            white_can_castle_k: false,
-            black_can_castle_q: false,
-            black_can_castle_k: false,
+            castling_rules: castling_rules,
+            can_castle_k_this_move: false,
+            can_castle_q_this_move: false,
         };
-        state.white_can_castle_q =
-            BoardState::evaluate_can_queen_side_castle(&state, PlayerColor::WHITE);
-        state.black_can_castle_q =
-            BoardState::evaluate_can_queen_side_castle(&state, PlayerColor::BLACK);
-        state.white_can_castle_k =
-            BoardState::evaluate_can_king_side_castle(&state, PlayerColor::WHITE);
-        state.black_can_castle_k =
-            BoardState::evaluate_can_king_side_castle(&state, PlayerColor::WHITE);
+        state.can_castle_k_this_move = state.evaluate_can_king_side_castle(state.player_to_move);
+        state.can_castle_q_this_move = state.evaluate_can_queen_side_castle(state.player_to_move);
         state
     }
+    /** This is an unsafe funtion, validate the moves yourself! */
     pub fn after_move(&self, mv: &ChessMove) -> BoardState {
         let mut pieces = Vec::<Piece>::new();
         for i in &self.pieces {
@@ -135,7 +155,24 @@ impl BoardState {
             pieces.push(i.clone());
         }
         pieces.push(mv.to);
-        BoardState::new(pieces, PlayerColor::opposite(self.player_to_move))
+        // TODO: if move was castles, set proper flags
+        let did_q_castle: bool = mv.is_queen_side_castles();
+        let did_k_castle: bool = mv.is_king_side_castles();
+
+        BoardState::new(
+            pieces,
+            PlayerColor::opposite(self.player_to_move),
+            CastlingRules::new(
+                self.castling_rules.white_can_still_castle_q
+                    && (!did_q_castle || self.player_to_move != PlayerColor::WHITE),
+                self.castling_rules.white_can_still_castle_k
+                    && (!did_k_castle || self.player_to_move != PlayerColor::WHITE),
+                self.castling_rules.black_can_still_castle_q
+                    && (!did_q_castle || self.player_to_move != PlayerColor::BLACK),
+                self.castling_rules.black_can_still_castle_k
+                    && (!did_k_castle || self.player_to_move != PlayerColor::BLACK),
+            ),
+        )
     }
     pub fn get_piece_at_square(&self, pos: Vec2<i8>) -> Option<Piece> {
         for l in &self.pieces {
@@ -151,9 +188,20 @@ impl BoardState {
             PlayerColor::WHITE => 0,
             PlayerColor::BLACK => 7,
         };
+        if player_color == PlayerColor::WHITE
+            && self.castling_rules.white_can_still_castle_k == false
+        {
+            return false;
+        }
+        if player_color == PlayerColor::BLACK
+        // TODO: replace with history.now() or GameContainer::position()
+            && self.castling_rules.black_can_still_castle_k
+                == false
+        {
+            return false;
+        }
         // TODO: check for attacked squares.
-        if self.white_can_castle_q
-            && self.get_piece_at_square(Vec2::new(4, y)).is_some()
+        if self.get_piece_at_square(Vec2::new(4, y)).is_some()
             && self
                 .get_piece_at_square(Vec2::new(4, y))
                 .unwrap()
@@ -174,17 +222,19 @@ impl BoardState {
     }
     fn evaluate_can_queen_side_castle(&self, player_color: PlayerColor) -> bool {
         // TODO: test
-        let mut y = 0;
-        if player_color == PlayerColor::BLACK {
-            y = 7;
-        }
+        let y = match player_color {
+            PlayerColor::WHITE => 0,
+            PlayerColor::BLACK => 7,
+        };
 
-        if player_color == PlayerColor::WHITE && self.white_can_castle_q == false {
+        if player_color == PlayerColor::WHITE
+            && self.castling_rules.white_can_still_castle_q == false
+        {
             return false;
         }
         if player_color == PlayerColor::BLACK
         // TODO: replace with history.now() or GameContainer::position()
-            && self.black_can_castle_q
+            && self.castling_rules.black_can_still_castle_q
                 == false
         {
             return false;
@@ -193,8 +243,7 @@ impl BoardState {
         // TODO: check for attacked squares.
         let piece_there_ey = self.get_piece_at_square(Vec2::new(4, y));
         let piece_there_ay = self.get_piece_at_square(Vec2::new(0, y));
-        if self.white_can_castle_q
-            && piece_there_ey.is_some()
+        if piece_there_ey.is_some()
             && piece_there_ey.unwrap().piece_type == PieceType::KING
             && piece_there_ay.is_some()
             && piece_there_ay.unwrap().piece_type == PieceType::ROOK
@@ -339,6 +388,35 @@ impl BoardState {
                         != MovePlausibility::IMPOSSIBLE
                     {
                         moves.push(ChessMove::new(in_piece, piece_to));
+                    }
+                }
+                // TODO: intercept castling execution
+                if self.player_to_move == PlayerColor::BLACK {
+                    if self.can_castle_k_this_move {
+                        moves.push(ChessMove::new(
+                            p.clone(),
+                            Piece::new(6, 7, p.piece_type, p.color),
+                        ));
+                    }
+                    if self.can_castle_q_this_move {
+                        moves.push(ChessMove::new(
+                            p.clone(),
+                            Piece::new(2, 7, p.piece_type, p.color),
+                        ));
+                    }
+                }
+                if self.player_to_move == PlayerColor::WHITE {
+                    if self.can_castle_k_this_move {
+                        moves.push(ChessMove::new(
+                            p.clone(),
+                            Piece::new(6, 0, p.piece_type, p.color),
+                        ));
+                    }
+                    if self.can_castle_q_this_move {
+                        moves.push(ChessMove::new(
+                            p.clone(),
+                            Piece::new(2, 0, p.piece_type, p.color),
+                        ));
                     }
                 }
             }
@@ -590,6 +668,14 @@ impl Piece {
 impl ChessMove {
     pub fn new(from: Piece, to: Piece) -> ChessMove {
         ChessMove { from: from, to: to }
+    }
+    pub fn is_king_side_castles(&self) -> bool {
+        // TODO:
+        false
+    }
+    pub fn is_queen_side_castles(&self) -> bool {
+        // TODO:
+        false
     }
 }
 impl PlayerColor {
