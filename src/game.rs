@@ -9,10 +9,6 @@ impl GameContainer {
         let history = GameHistory::new(vec![GameContainer::default_board().unwrap()], None);
         GameContainer { history: history }
     }
-    pub fn execute_move(&mut self, mv: ChessMove) -> Option<ChessMove> {
-        self.history.execute_move(mv);
-        Some(mv)
-    }
     pub fn get_board(&mut self) -> BoardState {
         self.history.board_states.last_mut().unwrap().clone()
     }

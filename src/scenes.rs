@@ -142,6 +142,34 @@ impl GameScene {
             should_clear_notes: true,
         })
     }
+    pub fn on_check(&self) {
+        println!("It's check!");
+    }
+    pub fn on_checkmate(&self) {
+        println!("It's checkmate!");
+    }
+    pub fn execute_move(&mut self, mv: ChessMove) -> Option<ChessMove> {
+        self.game.history.execute_move(mv);
+        if self.game.get_board().is_check(None) {
+            self.on_check();
+        }
+        if self.game.get_board().get_all_legal_moves().len() == 0 {
+            self.on_checkmate();
+        }
+        Some(mv)
+    }
+    pub fn handle_move(
+        &mut self,
+        board: &BoardState,
+        newly_selected_square: Vec2<i8>,
+        newly_selected_piece: &Piece,
+        ctx: &mut Context,
+    ) {
+        self.selected = board.get_piece_at_square(newly_selected_square);
+        let new_moves = board.get_legal_moves(&newly_selected_piece);
+        self.highlight_squares(&new_moves, ctx);
+        self.should_rerender_pieces = true;
+    }
     fn highlight_squares(&mut self, moves: &Vec<ChessMove>, ctx: &mut Context) {
         graphics::set_canvas(ctx, &self.notes_box.canvas);
         graphics::clear(ctx, Color::rgba(0., 0., 0., 0.));
@@ -160,7 +188,7 @@ impl GameScene {
     ) -> tetra::Result<Transition> {
         let board = self.game.get_board();
         if let Some(k) = move_to_make {
-            self.should_rerender_pieces = self.game.execute_move(k).is_some();
+            self.should_rerender_pieces = self.execute_move(k).is_some();
             self.selected = None;
         }
         if self.should_rerender_pieces {
@@ -254,7 +282,7 @@ impl Scene for GameScene {
         if let Some(newly_selected_square) = self.get_selected_square(ctx) {
             if let Some(selected_piece) = self.selected {
                 // make a move if you can here:
-                let moves = board.get_plausible_moves(&selected_piece);
+                let moves = board.get_legal_moves(&selected_piece);
                 for avlbl_move in moves {
                     if avlbl_move.to.pos() == newly_selected_square {
                         move_to_make = Some(avlbl_move);
@@ -268,11 +296,12 @@ impl Scene for GameScene {
                 {
                     if move_to_make.is_none() {
                         if newly_selected_piece.color == selected_piece.color {
-                            // TODO: change focus to another piece if same color
-                            self.selected = board.get_piece_at_square(newly_selected_square);
-                            let new_moves = board.get_plausible_moves(&newly_selected_piece);
-                            self.highlight_squares(&new_moves, ctx);
-                            self.should_rerender_pieces = true;
+                            self.handle_move(
+                                &board,
+                                newly_selected_square,
+                                &newly_selected_piece,
+                                ctx,
+                            );
                         } else {
                             self.should_clear_notes = true;
                             self.selected = None;
@@ -289,10 +318,7 @@ impl Scene for GameScene {
                     .get_piece_at_square(newly_selected_square)
                 {
                     if newly_selected_piece.color == board.player_to_move {
-                        self.selected = board.get_piece_at_square(newly_selected_square);
-                        let new_moves = board.get_plausible_moves(&newly_selected_piece);
-                        self.highlight_squares(&new_moves, ctx);
-                        self.should_rerender_pieces = true;
+                        self.handle_move(&board, newly_selected_square, &newly_selected_piece, ctx);
                     }
                 }
             }
