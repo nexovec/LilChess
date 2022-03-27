@@ -120,7 +120,7 @@ impl BoardState {
     }
     /** This is an unsafe funtion, validate the moves yourself! */
     pub fn after_move(&self, mv: ChessMove) -> BoardState {
-        // FIXME: castles disable castles for the other player
+        // TODO: check castles get disabled properly
         let mut pieces = Vec::<Piece>::new();
         for i in &self.pieces {
             if mv.to.pos() == i.pos() {
@@ -135,7 +135,7 @@ impl BoardState {
         let did_q_castle: bool = mv.is_queen_side_castles();
         let did_k_castle: bool = mv.is_king_side_castles();
 
-        let position_after_move = BoardState::new(
+        let mut position_after_move = BoardState::new(
             pieces,
             PlayerColor::opposite(self.player_to_move),
             CastlingRules::new(
@@ -150,6 +150,7 @@ impl BoardState {
             ),
         );
         if did_k_castle {
+            position_after_move.player_to_move = self.player_to_move;
             let y = match self.player_to_move {
                 PlayerColor::WHITE => 0,
                 PlayerColor::BLACK => 7,
@@ -162,6 +163,7 @@ impl BoardState {
             return rook_moved;
         }
         if did_q_castle {
+            position_after_move.player_to_move = self.player_to_move;
             let y = match self.player_to_move {
                 PlayerColor::WHITE => 0,
                 PlayerColor::BLACK => 7,
