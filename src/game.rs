@@ -38,7 +38,11 @@ impl GameContainer {
         p(Piece::new(6, 7, PieceType::KNIGHT, PlayerColor::BLACK));
         p(Piece::new(4, 7, PieceType::KING, PlayerColor::BLACK));
         p(Piece::new(3, 7, PieceType::QUEEN, PlayerColor::BLACK));
-        Ok(BoardState::new(pieces, PlayerColor::WHITE, CastlingRules::new(true, true, true, true)))
+        Ok(BoardState::new(
+            pieces,
+            PlayerColor::WHITE,
+            CastlingRules::new(true, true, true, true),
+        ))
     }
     #[allow(dead_code)]
     fn test_board_2() -> tetra::Result<BoardState> {
@@ -51,8 +55,13 @@ impl GameContainer {
         p(Piece::new(6, 2, PieceType::KING, PlayerColor::BLACK));
         p(Piece::new(4, 4, PieceType::BISHOP, PlayerColor::BLACK));
         p(Piece::new(6, 6, PieceType::PAWN, PlayerColor::BLACK));
-        Ok(BoardState::new(pieces, PlayerColor::WHITE, CastlingRules::new(false, false, false, false)))
+        Ok(BoardState::new(
+            pieces,
+            PlayerColor::WHITE,
+            CastlingRules::new(false, false, false, false),
+        ))
     }
+    #[allow(dead_code)]
     fn test_board_1() -> tetra::Result<BoardState> {
         let mut pieces = Vec::new();
         let mut p = |i| pieces.push(i);
@@ -64,6 +73,10 @@ impl GameContainer {
         p(Piece::new(4, 0, PieceType::KING, PlayerColor::WHITE));
         p(Piece::new(5, 3, PieceType::BISHOP, PlayerColor::BLACK));
         p(Piece::new(6, 6, PieceType::PAWN, PlayerColor::BLACK));
-        Ok(BoardState::new(pieces, PlayerColor::WHITE, CastlingRules::new(false, false, false, false)))
+        Ok(BoardState::new(
+            pieces,
+            PlayerColor::WHITE,
+            CastlingRules::new(false, false, false, false),
+        ))
     }
 }

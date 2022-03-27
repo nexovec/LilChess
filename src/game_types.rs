@@ -83,7 +83,6 @@ impl GameHistory {
             moves: moves_unwrapped,
         }
     }
-    // FIXME: duplicate of GameContainer::get_board()
     pub fn get_board(&mut self) -> &BoardState {
         self.board_states.last().unwrap()
     }
@@ -91,36 +90,13 @@ impl GameHistory {
      * Assumes the move is already checked
      */
     pub fn on_piece_taken(&mut self) -> () {
-        // TODO: print something nice to the screen
         println!("I've taken a piece");
     }
-    // TODO: sync BoardState.color with GameHistory.initial_p_to_move
     pub fn execute_move(&mut self, mv: ChessMove) -> bool {
-        self.moves.push(mv);
-        let mut new_state = self.get_board().clone();
-        match new_state.pieces.iter().position(|x| *x == mv.from) {
-            Some(k) => {
-                new_state.pieces.remove(k);
-            }
-            None => {
-                // TODO: cheater or bug, do something fun
-            }
-        }
-        match new_state
-            .pieces
-            .iter()
-            .position(|x| x.x == mv.to.x && x.y == mv.to.y)
-        {
-            Some(k) => {
-                new_state.pieces.remove(k);
-                self.on_piece_taken()
-            }
-            None => {}
-        }
-        new_state.pieces.push(mv.to);
-        new_state.player_to_move = PlayerColor::opposite(new_state.player_to_move);
-
-        self.board_states.push(new_state);
+        // TODO: why is this returning a bool wtf
+        self.moves.push(mv.clone());
+        let board = self.get_board().to_owned();
+        self.board_states.push(board.after_move(mv));
         true
     }
 }
@@ -143,7 +119,8 @@ impl BoardState {
         state
     }
     /** This is an unsafe funtion, validate the moves yourself! */
-    pub fn after_move(&self, mv: &ChessMove) -> BoardState {
+    pub fn after_move(&self, mv: ChessMove) -> BoardState {
+        // FIXME: castles disable castles for the other player
         let mut pieces = Vec::<Piece>::new();
         for i in &self.pieces {
             if mv.to.pos() == i.pos() {
@@ -155,11 +132,10 @@ impl BoardState {
             pieces.push(i.clone());
         }
         pieces.push(mv.to);
-        // TODO: if move was castles, set proper flags
         let did_q_castle: bool = mv.is_queen_side_castles();
         let did_k_castle: bool = mv.is_king_side_castles();
 
-        BoardState::new(
+        let position_after_move = BoardState::new(
             pieces,
             PlayerColor::opposite(self.player_to_move),
             CastlingRules::new(
@@ -172,7 +148,32 @@ impl BoardState {
                 self.castling_rules.black_can_still_castle_k
                     && (!did_k_castle || self.player_to_move != PlayerColor::BLACK),
             ),
-        )
+        );
+        if did_k_castle {
+            let y = match self.player_to_move {
+                PlayerColor::WHITE => 0,
+                PlayerColor::BLACK => 7,
+            };
+            let piece_from = Piece::new(7, y, PieceType::ROOK, self.player_to_move);
+            let piece_to = Piece::new(5, y, PieceType::ROOK, self.player_to_move);
+            let mut rook_moved =
+                position_after_move.after_move(ChessMove::new(piece_from, piece_to));
+            rook_moved.player_to_move = PlayerColor::opposite(self.player_to_move);
+            return rook_moved;
+        }
+        if did_q_castle {
+            let y = match self.player_to_move {
+                PlayerColor::WHITE => 0,
+                PlayerColor::BLACK => 7,
+            };
+            let piece_from = Piece::new(0, y, PieceType::ROOK, self.player_to_move);
+            let piece_to = Piece::new(3, y, PieceType::ROOK, self.player_to_move);
+            let mut rook_moved =
+                position_after_move.after_move(ChessMove::new(piece_from, piece_to));
+            rook_moved.player_to_move = PlayerColor::opposite(self.player_to_move);
+            return rook_moved;
+        }
+        position_after_move
     }
     pub fn get_piece_at_square(&self, pos: Vec2<i8>) -> Option<Piece> {
         for l in &self.pieces {
@@ -201,18 +202,12 @@ impl BoardState {
             return false;
         }
         // TODO: check for attacked squares.
-        if self.get_piece_at_square(Vec2::new(4, y)).is_some()
-            && self
-                .get_piece_at_square(Vec2::new(4, y))
-                .unwrap()
-                .piece_type
-                == PieceType::KING
-            && self.get_piece_at_square(Vec2::new(7, y)).is_some()
-            && self
-                .get_piece_at_square(Vec2::new(7, y))
-                .unwrap()
-                .piece_type
-                == PieceType::ROOK
+        let piece_at_4 = self.get_piece_at_square(Vec2::new(4, y));
+        let piece_at_7 = self.get_piece_at_square(Vec2::new(7, y));
+        if piece_at_4.is_some()
+            && piece_at_4.unwrap().piece_type == PieceType::KING
+            && piece_at_7.is_some()
+            && piece_at_7.unwrap().piece_type == PieceType::ROOK
             && self.get_piece_at_square(Vec2::new(5, y)).is_none()
             && self.get_piece_at_square(Vec2::new(6, y)).is_none()
         {
@@ -636,7 +631,7 @@ impl BoardState {
         let legal_moves: Vec<ChessMove> = plausible_moves
             .into_iter()
             .filter(|mv: &ChessMove| -> bool {
-                !self.after_move(mv).is_check(Some(self.player_to_move))
+                !self.after_move(*mv).is_check(Some(self.player_to_move))
             })
             .collect();
         legal_moves
@@ -670,12 +665,40 @@ impl ChessMove {
         ChessMove { from: from, to: to }
     }
     pub fn is_king_side_castles(&self) -> bool {
-        // TODO:
-        false
+        if self.from.piece_type != PieceType::KING {
+            return false;
+        }
+        if self.from.x != 4 {
+            return false;
+        }
+        if self.from.y != 0 && self.from.y != 7 {
+            return false;
+        }
+        if self.to.y != 0 && self.to.y != 7 {
+            return false;
+        }
+        if self.to.x != 6 {
+            return false;
+        }
+        true
     }
     pub fn is_queen_side_castles(&self) -> bool {
-        // TODO:
-        false
+        if self.from.piece_type != PieceType::KING {
+            return false;
+        }
+        if self.from.x != 4 {
+            return false;
+        }
+        if self.from.y != 0 && self.from.y != 7 {
+            return false;
+        }
+        if self.to.y != 0 && self.to.y != 7 {
+            return false;
+        }
+        if self.to.x != 2 {
+            return false;
+        }
+        true
     }
 }
 impl PlayerColor {
