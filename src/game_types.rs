@@ -86,12 +86,6 @@ impl GameHistory {
     pub fn get_board(&mut self) -> &BoardState {
         self.board_states.last().unwrap()
     }
-    /**
-     * Assumes the move is already checked
-     */
-    pub fn on_piece_taken(&mut self) -> () {
-        println!("I've taken a piece");
-    }
     pub fn execute_move(&mut self, mv: ChessMove) -> bool {
         // TODO: why is this returning a bool wtf
         self.moves.push(mv.clone());

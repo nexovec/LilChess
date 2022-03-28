@@ -148,7 +148,19 @@ impl GameScene {
     pub fn on_checkmate(&self) {
         println!("It's checkmate!");
     }
+    pub fn on_piece_taken(&mut self) -> () {
+        println!("I've taken a piece");
+    }
     pub fn execute_move(&mut self, mv: ChessMove) -> Option<ChessMove> {
+        if self
+            .game
+            .get_board()
+            .pieces
+            .iter()
+            .any(|piece_there| mv.to.pos() == piece_there.pos())
+        {
+            self.on_piece_taken();
+        }
         self.game.history.execute_move(mv);
         if self.game.get_board().is_check(None) {
             self.on_check();
