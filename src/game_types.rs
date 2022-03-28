@@ -135,18 +135,30 @@ impl BoardState {
         let did_q_castle: bool = mv.is_queen_side_castles();
         let did_k_castle: bool = mv.is_king_side_castles();
 
+        let did_break_castling_k = mv.from.piece_type == PieceType::KING
+            || (mv.from.piece_type == PieceType::ROOK
+                && (mv.from.y == 0 || mv.from.y == 7)
+                && (mv.from.x == 7));
+        let did_break_castling_q = mv.from.piece_type == PieceType::KING
+            || (mv.from.piece_type == PieceType::ROOK
+                && (mv.from.y == 0 || mv.from.y == 7)
+                && (mv.from.x == 0));
         let mut position_after_move = BoardState::new(
             pieces,
             PlayerColor::opposite(self.player_to_move),
             CastlingRules::new(
                 self.castling_rules.white_can_still_castle_q
-                    && (!did_q_castle || self.player_to_move != PlayerColor::WHITE),
+                    && ((!did_break_castling_q && !did_q_castle)
+                        || self.player_to_move != PlayerColor::WHITE),
                 self.castling_rules.white_can_still_castle_k
-                    && (!did_k_castle || self.player_to_move != PlayerColor::WHITE),
+                    && ((!did_break_castling_k && !did_k_castle)
+                        || self.player_to_move != PlayerColor::WHITE),
                 self.castling_rules.black_can_still_castle_q
-                    && (!did_q_castle || self.player_to_move != PlayerColor::BLACK),
+                    && ((!did_break_castling_q && !did_q_castle)
+                        || self.player_to_move != PlayerColor::BLACK),
                 self.castling_rules.black_can_still_castle_k
-                    && (!did_k_castle || self.player_to_move != PlayerColor::BLACK),
+                    && ((!did_break_castling_k && !did_k_castle)
+                        || self.player_to_move != PlayerColor::BLACK),
             ),
         );
         if did_k_castle {
