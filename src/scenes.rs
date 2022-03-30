@@ -4,9 +4,9 @@ use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};
 use crate::Assets;
 use tetra::graphics;
 use tetra::graphics::text::VectorFontBuilder;
+use tetra::graphics::Canvas;
 use tetra::graphics::Texture;
-use tetra::TetraError;
-use tetra::{graphics::Canvas, math::Vec4};
+use tetra::math::Vec4;
 use tetra::{
     graphics::{text::Text, Color},
     math::Vec2,
@@ -159,7 +159,7 @@ impl GameScene {
         // FIXME: white timer is the black timer and the black timer is the white timer
         let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?.with_size(ctx, 32.0)?;
         let black_text = format!(
-            "{}:{}",
+            "{:02}:{:02}",
             self.black_time_remaining as i32 / 60,
             self.black_time_remaining as i32 % 60
         );
@@ -171,7 +171,7 @@ impl GameScene {
         );
         white_timer.draw(ctx)?;
         let white_text = format!(
-            "{}:{}",
+            "{:02}:{:02}",
             self.white_time_remaining as i32 / 60,
             self.white_time_remaining as i32 % 60
         );
@@ -187,8 +187,9 @@ impl GameScene {
     pub fn on_check(&self) {
         println!("It's check!");
     }
-    pub fn on_checkmate(&self) {
+    pub fn on_checkmate(&mut self) {
         println!("It's checkmate!");
+        self.player_whose_time_is_ticking = None;
     }
     pub fn on_piece_taken(&mut self) -> () {
         println!("I've taken a piece");
@@ -242,10 +243,10 @@ impl GameScene {
     ) -> tetra::Result<Transition> {
         let board = self.game.get_board();
         if let Some(k) = move_to_make {
-            self.should_rerender_pieces = self.execute_move(k).is_some();
-            self.selected = None;
             self.player_whose_time_is_ticking =
                 Some(PlayerColor::opposite(self.game.get_board().player_to_move));
+            self.should_rerender_pieces = self.execute_move(k).is_some();
+            self.selected = None;
         }
         if self.should_rerender_pieces {
             let mut new_pieces: Vec<Box<dyn Scene>> = Vec::new();
