@@ -3,7 +3,9 @@ use crate::game_types::*;
 use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};
 use crate::Assets;
 use tetra::graphics;
+use tetra::graphics::text::VectorFontBuilder;
 use tetra::graphics::Texture;
+use tetra::TetraError;
 use tetra::{graphics::Canvas, math::Vec4};
 use tetra::{
     graphics::{text::Text, Color},
@@ -45,7 +47,6 @@ impl MenuScene {
         })
     }
 }
-// TODO: refactor
 impl Scene for MenuScene {
     fn draw(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
         graphics::clear(ctx, self.bcg_color);
@@ -80,6 +81,11 @@ struct GameScene {
     selected: Option<Piece>,
     should_rerender_pieces: bool,
     should_clear_notes: bool,
+    white_time_limit: f32,
+    black_time_limit: f32,
+    white_time_remaining: f32,
+    black_time_remaining: f32,
+    player_whose_time_is_ticking: Option<PlayerColor>,
 }
 impl GameScene {
     fn new(ctx: &mut Context) -> tetra::Result<GameScene> {
@@ -96,8 +102,6 @@ impl GameScene {
         shader.set_uniform(ctx, "viewport", board_size);
         board_canvas.draw(ctx, Vec2::<f32>::new(0.0, 0.0));
         graphics::reset_canvas(ctx);
-        graphics::reset_shader(ctx);
-        // TODO: chessboard and pieces into one UIFlexBox
 
         let pieces_box = UIFlexBox::new(
             ctx,
@@ -115,7 +119,7 @@ impl GameScene {
             2,
         )?;
 
-        let mut flex_box = UIFlexBox::new(
+        let mut history_box = UIFlexBox::new(
             ctx,
             Vec2::new(400., 500.),
             Vec2::new(740., 100.),
@@ -123,24 +127,62 @@ impl GameScene {
             3,
         )?;
         let text1 = Text::new("bruh", font.with_size(ctx, 16.0)?);
-        flex_box.children.push(Box::new(UIText::new(
+        history_box.children.push(Box::new(UIText::new(
             ctx,
             Vec2::<f32>::new(0., 0.),
             text1,
             Box::new(|_: &mut _| Transition::None),
             Box::new(|_: &mut _| Transition::None),
         )?));
+        let white_time_limit = 500.0;
+        let black_time_limit = 500.0;
         Ok(GameScene {
             assets,
             game,
             canvas: board_canvas,
-            history_box: flex_box,
+            history_box,
             pieces_box,
             notes_box,
             selected: None,
             should_rerender_pieces: true,
             should_clear_notes: true,
+            white_time_limit: white_time_limit,
+            black_time_limit: black_time_limit,
+            white_time_remaining: white_time_limit,
+            black_time_remaining: black_time_limit,
+            player_whose_time_is_ticking: None,
         })
+    }
+    pub fn draw_timers(&self, ctx: &mut Context) -> tetra::Result<Transition> {
+        // FIXME: No, don't copy the font for each timer
+        // FIXME: And no, don't use VectorFontBuilder here
+        // FIXME: white timer is the black timer and the black timer is the white timer
+        let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?.with_size(ctx, 32.0)?;
+        let black_text = format!(
+            "{}:{}",
+            self.black_time_remaining as i32 / 60,
+            self.black_time_remaining as i32 % 60
+        );
+        let mut white_timer: MenuButton = MenuButton::new(
+            Vec2::<i32>::new(10, 10),
+            Vec2::<i32>::new(530, 430),
+            Text::new(black_text, font.clone()),
+            Box::new(|ctx: &mut Context| Transition::None),
+        );
+        white_timer.draw(ctx)?;
+        let white_text = format!(
+            "{}:{}",
+            self.white_time_remaining as i32 / 60,
+            self.white_time_remaining as i32 % 60
+        );
+        let mut white_timer: MenuButton = MenuButton::new(
+            Vec2::<i32>::new(10, 10),
+            Vec2::<i32>::new(530, 120),
+            Text::new(white_text, font.clone()),
+            Box::new(|ctx: &mut Context| Transition::None),
+        );
+        white_timer.draw(ctx)?;
+        Ok(Transition::None)
     }
     pub fn on_check(&self) {
         println!("It's check!");
@@ -202,6 +244,8 @@ impl GameScene {
         if let Some(k) = move_to_make {
             self.should_rerender_pieces = self.execute_move(k).is_some();
             self.selected = None;
+            self.player_whose_time_is_ticking =
+                Some(PlayerColor::opposite(self.game.get_board().player_to_move));
         }
         if self.should_rerender_pieces {
             let mut new_pieces: Vec<Box<dyn Scene>> = Vec::new();
@@ -285,12 +329,21 @@ impl Scene for GameScene {
         }
         self.pieces_box.draw(ctx)?;
         self.history_box.draw(ctx)?;
+        self.draw_timers(ctx)?;
         Ok(Transition::None)
     }
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
         // TODO: clean up
         let mut move_to_make: Option<ChessMove> = None;
         let board: BoardState = self.game.get_board();
+        let increment: f32 = tetra::time::get_delta_time(ctx).as_millis() as f32 / 1000.0;
+        if let Some(player_color) = self.player_whose_time_is_ticking {
+            let timer_ref = match player_color {
+                PlayerColor::BLACK => &mut self.black_time_remaining,
+                PlayerColor::WHITE => &mut self.white_time_remaining,
+            };
+            *timer_ref -= increment;
+        }
         if let Some(newly_selected_square) = self.get_selected_square(ctx) {
             if let Some(selected_piece) = self.selected {
                 // make a move if you can here:
