@@ -187,14 +187,26 @@ impl GameScene {
     pub fn on_check(&self) {
         println!("It's check!");
     }
-    pub fn on_checkmate(&mut self) {
+    pub fn on_win(&self, player_color: PlayerColor) {
+        match player_color {
+            PlayerColor::WHITE => {
+                println!("white won!");
+            }
+            PlayerColor::BLACK => {
+                println!("black won!");
+            }
+        }
+    }
+    pub fn on_checkmate(&mut self) -> Option<PlayerColor> {
         println!("It's checkmate!");
-        self.player_whose_time_is_ticking = None;
+        let color = self.game.get_board().player_to_move;
+        self.on_win(PlayerColor::opposite(color));
+        None
     }
     pub fn on_piece_taken(&mut self) -> () {
         println!("I've taken a piece");
     }
-    pub fn execute_move(&mut self, mv: ChessMove) -> Option<ChessMove> {
+    pub fn execute_move(&mut self, mv: ChessMove) -> Option<PlayerColor> {
         if self
             .game
             .get_board()
@@ -209,9 +221,10 @@ impl GameScene {
             self.on_check();
         }
         if self.game.get_board().get_all_legal_moves().len() == 0 {
-            self.on_checkmate();
+            // TODO: this is cryptic as heck
+            return self.on_checkmate();
         }
-        Some(mv)
+        Some(PlayerColor::opposite(self.game.get_board().player_to_move))
     }
     pub fn handle_move(
         &mut self,
@@ -245,8 +258,8 @@ impl GameScene {
         if let Some(k) = move_to_make {
             self.player_whose_time_is_ticking =
                 Some(PlayerColor::opposite(self.game.get_board().player_to_move));
-            self.should_rerender_pieces = self.execute_move(k).is_some();
-            self.selected = None;
+            self.player_whose_time_is_ticking = self.execute_move(k);
+            self.should_rerender_pieces = true;
         }
         if self.should_rerender_pieces {
             let mut new_pieces: Vec<Box<dyn Scene>> = Vec::new();
