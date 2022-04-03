@@ -78,7 +78,7 @@ struct GameScene {
     history_box: UIFlexBox,
     pieces_box: UIFlexBox,
     notes_box: UIFlexBox,
-    selected: Option<Piece>,
+    selected_piece: Option<Piece>,
     should_rerender_pieces: bool,
     should_clear_notes: bool,
     white_time_limit: f32,
@@ -86,9 +86,14 @@ struct GameScene {
     white_time_remaining: f32,
     black_time_remaining: f32,
     player_whose_time_is_ticking: Option<PlayerColor>,
+    is_selectable: bool,
 }
+// FIXME: the timers correspond to the wrong color
 impl GameScene {
     fn new(ctx: &mut Context) -> tetra::Result<GameScene> {
+        let white_time_limit = 10.0;
+        let black_time_limit = 20.0;
+
         let assets = Assets::load_assets(ctx)?;
         let board_size = Vec2::<f32>::new(400.0, 400.0);
         let font = &assets.font;
@@ -134,8 +139,6 @@ impl GameScene {
             Box::new(|_: &mut _| Transition::None),
             Box::new(|_: &mut _| Transition::None),
         )?));
-        let white_time_limit = 500.0;
-        let black_time_limit = 500.0;
         Ok(GameScene {
             assets,
             game,
@@ -143,7 +146,7 @@ impl GameScene {
             history_box,
             pieces_box,
             notes_box,
-            selected: None,
+            selected_piece: None,
             should_rerender_pieces: true,
             should_clear_notes: true,
             white_time_limit: white_time_limit,
@@ -151,6 +154,7 @@ impl GameScene {
             white_time_remaining: white_time_limit,
             black_time_remaining: black_time_limit,
             player_whose_time_is_ticking: None,
+            is_selectable: true,
         })
     }
     pub fn draw_timers(&self, ctx: &mut Context) -> tetra::Result<Transition> {
@@ -233,7 +237,7 @@ impl GameScene {
         newly_selected_piece: &Piece,
         ctx: &mut Context,
     ) {
-        self.selected = board.get_piece_at_square(newly_selected_square);
+        self.selected_piece = board.get_piece_at_square(newly_selected_square);
         let new_moves = board.get_legal_moves(&newly_selected_piece);
         self.highlight_squares(&new_moves, ctx);
         self.should_rerender_pieces = true;
@@ -351,15 +355,24 @@ impl Scene for GameScene {
         let mut move_to_make: Option<ChessMove> = None;
         let board: BoardState = self.game.get_board();
         let increment: f32 = tetra::time::get_delta_time(ctx).as_millis() as f32 / 1000.0;
+        if !self.is_selectable {
+            return Ok(Transition::None);
+        }
         if let Some(player_color) = self.player_whose_time_is_ticking {
             let timer_ref = match player_color {
                 PlayerColor::BLACK => &mut self.black_time_remaining,
                 PlayerColor::WHITE => &mut self.white_time_remaining,
             };
             *timer_ref -= increment;
+            if *timer_ref <= 0.0 {
+                self.on_win(PlayerColor::opposite(player_color));
+                self.player_whose_time_is_ticking = None;
+                self.is_selectable = false;
+                self.selected_piece = None;
+            }
         }
         if let Some(newly_selected_square) = self.get_selected_square(ctx) {
-            if let Some(selected_piece) = self.selected {
+            if let Some(selected_piece) = self.selected_piece {
                 // make a move if you can here:
                 let moves = board.get_legal_moves(&selected_piece);
                 for avlbl_move in moves {
@@ -383,12 +396,12 @@ impl Scene for GameScene {
                             );
                         } else {
                             self.should_clear_notes = true;
-                            self.selected = None;
+                            self.selected_piece = None;
                         }
                     }
                 } else {
                     self.should_clear_notes = true;
-                    self.selected = None;
+                    self.selected_piece = None;
                 }
             } else {
                 if let Some(newly_selected_piece) = self
