@@ -79,7 +79,6 @@ pub struct Assets {
     alpha_color: Color,
 }
 impl Assets {
-    // TODO: fix bad piece coloring
     pub fn load_assets(ctx: &mut Context) -> tetra::Result<Assets> {
         let assets: Assets;
         let alpha_color = Color::rgba(0., 0., 0., 0.);

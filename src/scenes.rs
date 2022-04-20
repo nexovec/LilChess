@@ -91,8 +91,8 @@ struct GameScene {
 // FIXME: the timers correspond to the wrong color
 impl GameScene {
     fn new(ctx: &mut Context) -> tetra::Result<GameScene> {
-        let white_time_limit = 10.0;
-        let black_time_limit = 20.0;
+        let white_time_limit = 120.0;
+        let black_time_limit = 120.0;
 
         let assets = Assets::load_assets(ctx)?;
         let board_size = Vec2::<f32>::new(400.0, 400.0);
@@ -211,13 +211,15 @@ impl GameScene {
         println!("I've taken a piece");
     }
     pub fn execute_move(&mut self, mv: ChessMove) -> Option<PlayerColor> {
-        if self
-            .game
-            .get_board()
-            .pieces
-            .iter()
-            .any(|piece_there| mv.to.pos() == piece_there.pos())
-        {
+        if self.game.get_board().pieces.iter().any(|piece_there| {
+            mv.to.pos() == piece_there.pos()
+                || (self.game.get_board().can_take_en_passant.is_some()
+                    && mv.to.piece_type == PieceType::PAWN
+                    && mv.to.x == self.game.get_board().can_take_en_passant.unwrap()
+                    && piece_there.color == PlayerColor::opposite(mv.to.color)
+                    && ((piece_there.color == PlayerColor::WHITE && piece_there.y == 3)
+                        || (piece_there.color == PlayerColor::BLACK && piece_there.y == 4)))
+        }) {
             self.on_piece_taken();
         }
         self.game.history.execute_move(mv);
@@ -225,7 +227,7 @@ impl GameScene {
             self.on_check();
         }
         if self.game.get_board().get_all_legal_moves().len() == 0 {
-            // TODO: this is cryptic as heck
+            // if no legal moves
             return self.on_checkmate();
         }
         Some(PlayerColor::opposite(self.game.get_board().player_to_move))
@@ -373,6 +375,10 @@ impl Scene for GameScene {
         }
         if let Some(newly_selected_square) = self.get_selected_square(ctx) {
             if let Some(selected_piece) = self.selected_piece {
+                if selected_piece.color != self.game.get_board().player_to_move{
+                    // !! FIXME: same player can move after taking a piece??
+                    panic!("This should never happen!");
+                }
                 // make a move if you can here:
                 let moves = board.get_legal_moves(&selected_piece);
                 for avlbl_move in moves {

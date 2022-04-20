@@ -42,6 +42,7 @@ impl GameContainer {
             pieces,
             PlayerColor::WHITE,
             CastlingRules::new(true, true, true, true),
+            None,
         ))
     }
     #[allow(dead_code)]
@@ -59,6 +60,7 @@ impl GameContainer {
             pieces,
             PlayerColor::WHITE,
             CastlingRules::new(false, false, false, false),
+            None,
         ))
     }
     #[allow(dead_code)]
@@ -77,6 +79,7 @@ impl GameContainer {
             pieces,
             PlayerColor::WHITE,
             CastlingRules::new(false, false, false, false),
+            None,
         ))
     }
 }

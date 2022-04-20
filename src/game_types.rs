@@ -21,6 +21,7 @@ pub struct BoardState {
     pub castling_rules: CastlingRules,
     pub can_castle_k_this_move: bool,
     pub can_castle_q_this_move: bool,
+    pub can_take_en_passant: Option<i8>,
 }
 #[derive(Clone, Copy, PartialEq)]
 pub struct Piece {
@@ -91,6 +92,9 @@ impl GameHistory {
         self.moves.push(mv.clone());
         let board = self.get_board().to_owned();
         self.board_states.push(board.after_move(mv));
+        // if self.board_states.last().unwrap().can_take_en_passant.is_some() {
+        //     println!("This was a double pawn move, now en passant is possible!");
+        // }
         true
     }
 }
@@ -100,6 +104,7 @@ impl BoardState {
         pieces: Vec<Piece>,
         player_to_move: PlayerColor,
         castling_rules: CastlingRules,
+        can_take_en_passant: Option<i8>,
     ) -> BoardState {
         let mut state = BoardState {
             pieces: pieces,
@@ -107,6 +112,7 @@ impl BoardState {
             castling_rules: castling_rules,
             can_castle_k_this_move: false,
             can_castle_q_this_move: false,
+            can_take_en_passant: can_take_en_passant,
         };
         state.can_castle_k_this_move = state.evaluate_can_king_side_castle(state.player_to_move);
         state.can_castle_q_this_move = state.evaluate_can_queen_side_castle(state.player_to_move);
@@ -115,17 +121,63 @@ impl BoardState {
     /** This is an unsafe funtion, validate the moves yourself! */
     pub fn after_move(&self, mv: ChessMove) -> BoardState {
         // TODO: check castles get disabled properly
-        let mut pieces = Vec::<Piece>::new();
-        for i in &self.pieces {
-            if mv.to.pos() == i.pos() {
-                continue;
-            }
-            if mv.from.pos() == i.pos() {
-                continue;
-            }
-            pieces.push(i.clone());
+        let mut has_taken_en_passant: bool = false;
+        if self.can_take_en_passant.is_some()
+            && mv.to.piece_type == PieceType::PAWN
+            && mv.to.x == self.can_take_en_passant.unwrap()
+            && ((mv.to.color == PlayerColor::WHITE && mv.from.y == 4)
+                || (mv.to.color == PlayerColor::BLACK && mv.from.y == 3))
+        {
+            has_taken_en_passant = true;
         }
-        pieces.push(mv.to);
+
+        let mut can_take_en_passant: Option<i8> = None;
+        if mv.from.piece_type == PieceType::PAWN {
+            match self.player_to_move {
+                PlayerColor::WHITE => {
+                    if mv.from.y == 1 && mv.to.y == 3 {
+                        can_take_en_passant = Some(mv.from.x);
+                    }
+                }
+                PlayerColor::BLACK => {
+                    if mv.from.y == 6 && mv.to.y == 4 {
+                        can_take_en_passant = Some(mv.from.x);
+                    }
+                }
+            }
+        }
+        let mut pieces = Vec::<Piece>::new();
+        if has_taken_en_passant {
+            for i in &self.pieces {
+                if PlayerColor::opposite(self.player_to_move) == i.color
+                    && i.piece_type == PieceType::PAWN
+                    && i.x == mv.to.x
+                    && ((i.color == PlayerColor::BLACK && i.y == 4)
+                        || (i.color == PlayerColor::WHITE && i.y == 3))
+                {
+                    continue;
+                }
+                if mv.to.pos() == i.pos() {
+                    continue;
+                }
+                if mv.from.pos() == i.pos() {
+                    continue;
+                }
+                pieces.push(i.clone());
+            }
+            pieces.push(mv.to);
+        } else {
+            for i in &self.pieces {
+                if mv.to.pos() == i.pos() {
+                    continue;
+                }
+                if mv.from.pos() == i.pos() {
+                    continue;
+                }
+                pieces.push(i.clone());
+            }
+            pieces.push(mv.to);
+        }
         let did_q_castle: bool = mv.is_queen_side_castles();
         let did_k_castle: bool = mv.is_king_side_castles();
 
@@ -154,6 +206,7 @@ impl BoardState {
                     && ((!did_break_castling_k && !did_k_castle)
                         || self.player_to_move != PlayerColor::BLACK),
             ),
+            can_take_en_passant,
         );
         if did_k_castle {
             position_after_move.player_to_move = self.player_to_move;
@@ -482,8 +535,41 @@ impl BoardState {
                 moves.append(&mut queen_straight_moves.collect());
             }
             PieceType::PAWN => {
-                // TODO: en passant
                 // TODO: promotions
+                // en passant
+                let mut can_en_passant = self.can_take_en_passant.is_some();
+                if in_piece.color == PlayerColor::WHITE && in_piece.y != 4 {
+                    can_en_passant = false;
+                }
+                if in_piece.color == PlayerColor::BLACK && in_piece.y != 3 {
+                    can_en_passant = false;
+                }
+
+                if can_en_passant {
+                    if let Some(en_passant_x_coord) = self.can_take_en_passant {
+                        // TODO: also remove the opponents piece if move is en passant
+                        if en_passant_x_coord == in_piece.x + 1 {
+                            let new_piece = Piece::new(
+                                in_piece.x + 1,
+                                in_piece.y + 1,
+                                PieceType::PAWN,
+                                self.player_to_move,
+                            );
+                            let move_to_make = ChessMove::new(in_piece.clone(), new_piece);
+                            moves.push(move_to_make);
+                        }
+                        if en_passant_x_coord == in_piece.x - 1 {
+                            let new_piece = Piece::new(
+                                in_piece.x - 1,
+                                in_piece.y + 1,
+                                PieceType::PAWN,
+                                self.player_to_move,
+                            );
+                            let move_to_make = ChessMove::new(in_piece.clone(), new_piece);
+                            moves.push(move_to_make);
+                        }
+                    }
+                }
 
                 // taking
                 match in_piece.color {
@@ -634,7 +720,6 @@ impl BoardState {
         moves
     }
     pub fn get_legal_moves(&self, p: &Piece) -> Vec<ChessMove> {
-        // TODO:
         let plausible_moves: Vec<ChessMove> = self.get_plausible_moves(p);
         let legal_moves: Vec<ChessMove> = plausible_moves
             .into_iter()
