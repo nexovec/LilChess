@@ -375,15 +375,12 @@ impl Scene for GameScene {
         }
         if let Some(newly_selected_square) = self.get_selected_square(ctx) {
             if let Some(selected_piece) = self.selected_piece {
-                if selected_piece.color != self.game.get_board().player_to_move{
-                    // !! FIXME: same player can move after taking a piece??
-                    panic!("This should never happen!");
-                }
                 // make a move if you can here:
                 let moves = board.get_legal_moves(&selected_piece);
                 for avlbl_move in moves {
                     if avlbl_move.to.pos() == newly_selected_square {
                         move_to_make = Some(avlbl_move);
+                        self.selected_piece = None;
                         self.should_clear_notes = true;
                     }
                 }

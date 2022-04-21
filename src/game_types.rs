@@ -147,6 +147,7 @@ impl BoardState {
             }
         }
         let mut pieces = Vec::<Piece>::new();
+        // push new pieces
         if has_taken_en_passant {
             for i in &self.pieces {
                 if PlayerColor::opposite(self.player_to_move) == i.color
