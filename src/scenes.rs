@@ -1,3 +1,4 @@
+use crate::engine::*;
 use crate::game::*;
 use crate::game_types::*;
 use crate::ui::{MenuButton, UIFlexBox, UIImage, UIText};
@@ -31,19 +32,39 @@ impl MenuScene {
         let font = Assets::load_assets(ctx)?.font;
         let size = 32.0;
         let borders = Vec2::new(18, 18);
-        let pos1 = Vec2::new(300, 200);
-        let text1 = Text::new("New Game", font.with_size(ctx, size)?);
-        let func1 = Box::new(|s: &mut _| Transition::Push(Box::new(GameScene::new(s).unwrap())));
-        let btn1 = MenuButton::new(borders, pos1, text1, func1);
+        let btn_layout_y_padding = Vec2::new(0, 70);
+        let local_mp_btn_pos = Vec2::new(300, 200);
+        let local_mp_btn_text = Text::new("Local game", font.with_size(ctx, size)?);
+        let local_mp_btn_on_click =
+            Box::new(|s: &mut _| Transition::Push(Box::new(GameScene::new(s, None).unwrap())));
+        let local_mp_btn = MenuButton::new(
+            borders,
+            local_mp_btn_pos,
+            local_mp_btn_text,
+            local_mp_btn_on_click,
+        );
 
-        let pos2 = Vec2::new(0, 70) + pos1;
-        let text2 = Text::new("Quit nub", font.with_size(ctx, size)?);
-        let func2 = Box::new(|_: &mut _| Transition::Pop);
-        let btn2 = MenuButton::new(borders, pos2, text2, func2);
+        let local_sp_btn_pos = btn_layout_y_padding + local_mp_btn_pos;
+        let local_sp_btn_text = Text::new("Play an engine", font.with_size(ctx, size)?);
+        let local_sp_btn_on_click = Box::new(|s: &mut _| {
+            Transition::Push(Box::new(GameScene::new(s, Some(Engine::new())).unwrap()))
+        });
+        let local_sp_btn = MenuButton::new(
+            borders,
+            local_sp_btn_pos,
+            local_sp_btn_text,
+            local_sp_btn_on_click,
+        );
+
+        let quit_btn_pos = btn_layout_y_padding + local_sp_btn_pos;
+        let quit_btn_text = Text::new("Quit", font.with_size(ctx, size)?);
+        let quit_btn_on_click = Box::new(|_: &mut _| Transition::Pop);
+        let quit_btn = MenuButton::new(borders, quit_btn_pos, quit_btn_text, quit_btn_on_click);
+
         let unit = 1.0 / 255.;
         Ok(MenuScene {
             bcg_color: Color::rgb(unit * 196., unit * 196., unit * 196.),
-            buttons: vec![btn1, btn2],
+            buttons: vec![local_mp_btn, local_sp_btn, quit_btn],
         })
     }
 }
@@ -87,10 +108,12 @@ struct GameScene {
     black_time_remaining: f32,
     player_whose_time_is_ticking: Option<PlayerColor>,
     is_selectable: bool,
+    engine: Option<Engine>,
 }
 // FIXME: the timers correspond to the wrong color
 impl GameScene {
-    fn new(ctx: &mut Context) -> tetra::Result<GameScene> {
+    fn new(ctx: &mut Context, engine: Option<Engine>) -> tetra::Result<GameScene> {
+        // TODO: setup engine
         let white_time_limit = 120.0;
         let black_time_limit = 120.0;
 
@@ -155,6 +178,7 @@ impl GameScene {
             black_time_remaining: black_time_limit,
             player_whose_time_is_ticking: None,
             is_selectable: true,
+            engine,
         })
     }
     pub fn draw_timers(&self, ctx: &mut Context) -> tetra::Result<Transition> {
@@ -371,6 +395,17 @@ impl Scene for GameScene {
                 self.player_whose_time_is_ticking = None;
                 self.is_selectable = false;
                 self.selected_piece = None;
+            }
+        }
+        if let Some(engine) = self.engine.as_mut() {
+            let board_state = self.game.get_board();
+            // TODO: use self.player_whose_time_is_ticking instead
+            if self.player_whose_time_is_ticking.is_some()
+                && board_state.player_to_move == PlayerColor::BLACK
+            {
+                println!("The engine made a move!");
+                move_to_make = Some(engine.make_move(board_state));
+                return self.post_update(move_to_make, ctx);
             }
         }
         if let Some(newly_selected_square) = self.get_selected_square(ctx) {

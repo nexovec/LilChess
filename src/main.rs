@@ -2,6 +2,7 @@ mod game;
 mod game_types;
 mod scenes;
 mod ui;
+mod engine;
 use scenes::{MenuScene, Scene, Transition};
 use tetra::graphics;
 use tetra::graphics::text::Text;
