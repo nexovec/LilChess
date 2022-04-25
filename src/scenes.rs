@@ -403,8 +403,10 @@ impl Scene for GameScene {
             if self.player_whose_time_is_ticking.is_some()
                 && board_state.player_to_move == PlayerColor::BLACK
             {
-                println!("The engine made a move!");
-                move_to_make = Some(engine.make_move(board_state));
+                move_to_make = engine.make_move(board_state);
+                if move_to_make.is_some() {
+                    println!("Engine made a move!");
+                }
                 return self.post_update(move_to_make, ctx);
             }
         }
