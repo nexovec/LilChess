@@ -42,6 +42,11 @@ pub struct CastlingRules {
     pub black_can_still_castle_q: bool,
     pub black_can_still_castle_k: bool,
 }
+pub struct MoveDescription {
+    pub was_takes: bool,
+    pub was_check: bool,
+    pub was_checkmate: bool,
+}
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum PieceType {
     PAWN,
@@ -87,15 +92,28 @@ impl GameHistory {
     pub fn get_board(&mut self) -> &BoardState {
         self.board_states.last().unwrap()
     }
-    pub fn execute_move(&mut self, mv: ChessMove) -> bool {
-        // TODO: why is this returning a bool wtf
+    pub fn execute_move(&mut self, mv: ChessMove) -> MoveDescription {
+        let board_state = self.get_board().clone();
         self.moves.push(mv.clone());
         let board = self.get_board().to_owned();
-        self.board_states.push(board.after_move(mv));
-        // if self.board_states.last().unwrap().can_take_en_passant.is_some() {
-        //     println!("This was a double pawn move, now en passant is possible!");
-        // }
-        true
+        let board_after_move = board.after_move(mv);
+        let was_takes = board_state.pieces.iter().any(|piece_there| {
+            mv.to.pos() == piece_there.pos()
+                || (board_state.can_take_en_passant.is_some()
+                    && mv.to.piece_type == PieceType::PAWN
+                    && mv.to.x == board_state.can_take_en_passant.unwrap()
+                    && piece_there.color == PlayerColor::opposite(mv.to.color)
+                    && ((piece_there.color == PlayerColor::WHITE && piece_there.y == 3)
+                        || (piece_there.color == PlayerColor::BLACK && piece_there.y == 4)))
+        });
+        let was_checkmate = board_after_move.get_all_legal_moves().len() == 0;
+        let was_check = board_after_move.is_check(None);
+        self.board_states.push(board_after_move);
+        MoveDescription {
+            was_check: was_check,
+            was_checkmate: was_checkmate,
+            was_takes,
+        }
     }
 }
 

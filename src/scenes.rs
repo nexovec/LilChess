@@ -218,10 +218,10 @@ impl GameScene {
     pub fn on_win(&self, player_color: PlayerColor) {
         match player_color {
             PlayerColor::WHITE => {
-                println!("white won!");
+                println!("White won!");
             }
             PlayerColor::BLACK => {
-                println!("black won!");
+                println!("Black won!");
             }
         }
     }
@@ -235,26 +235,18 @@ impl GameScene {
         println!("I've taken a piece");
     }
     pub fn execute_move(&mut self, mv: ChessMove) -> Option<PlayerColor> {
-        if self.game.get_board().pieces.iter().any(|piece_there| {
-            mv.to.pos() == piece_there.pos()
-                || (self.game.get_board().can_take_en_passant.is_some()
-                    && mv.to.piece_type == PieceType::PAWN
-                    && mv.to.x == self.game.get_board().can_take_en_passant.unwrap()
-                    && piece_there.color == PlayerColor::opposite(mv.to.color)
-                    && ((piece_there.color == PlayerColor::WHITE && piece_there.y == 3)
-                        || (piece_there.color == PlayerColor::BLACK && piece_there.y == 4)))
-        }) {
+        let board_state = self.game.get_board();
+        let move_info = self.game.history.execute_move(mv);
+        if move_info.was_takes {
             self.on_piece_taken();
         }
-        self.game.history.execute_move(mv);
-        if self.game.get_board().is_check(None) {
+        if move_info.was_check {
             self.on_check();
         }
-        if self.game.get_board().get_all_legal_moves().len() == 0 {
-            // if no legal moves
+        if move_info.was_checkmate {
             return self.on_checkmate();
         }
-        Some(PlayerColor::opposite(self.game.get_board().player_to_move))
+        Some(PlayerColor::opposite(board_state.player_to_move))
     }
     pub fn handle_move(
         &mut self,
@@ -379,7 +371,7 @@ impl Scene for GameScene {
     fn update(&mut self, ctx: &mut Context) -> tetra::Result<Transition> {
         // TODO: clean up
         let mut move_to_make: Option<ChessMove> = None;
-        let board: BoardState = self.game.get_board();
+        let board_state: BoardState = self.game.get_board();
         let increment: f32 = tetra::time::get_delta_time(ctx).as_millis() as f32 / 1000.0;
         if !self.is_selectable {
             return Ok(Transition::None);
@@ -397,23 +389,21 @@ impl Scene for GameScene {
                 self.selected_piece = None;
             }
         }
-        if let Some(engine) = self.engine.as_mut() {
-            let board_state = self.game.get_board();
-            // TODO: use self.player_whose_time_is_ticking instead
-            if self.player_whose_time_is_ticking.is_some()
-                && board_state.player_to_move == PlayerColor::BLACK
-            {
-                move_to_make = engine.make_move(board_state);
-                if move_to_make.is_some() {
-                    println!("Engine made a move!");
-                }
-                return self.post_update(move_to_make, ctx);
+        if self.engine.is_some()
+            && self.player_whose_time_is_ticking.is_some()
+            && board_state.player_to_move == PlayerColor::BLACK
+        {
+            move_to_make = self.engine.as_mut().unwrap().make_move(board_state);
+            // DEBUG:
+            if move_to_make.is_some() {
+                println!("Engine made a move!");
             }
+            return self.post_update(move_to_make, ctx);
         }
         if let Some(newly_selected_square) = self.get_selected_square(ctx) {
             if let Some(selected_piece) = self.selected_piece {
                 // make a move if you can here:
-                let moves = board.get_legal_moves(&selected_piece);
+                let moves = board_state.get_legal_moves(&selected_piece);
                 for avlbl_move in moves {
                     if avlbl_move.to.pos() == newly_selected_square {
                         move_to_make = Some(avlbl_move);
@@ -429,7 +419,7 @@ impl Scene for GameScene {
                     if move_to_make.is_none() {
                         if newly_selected_piece.color == selected_piece.color {
                             self.handle_move(
-                                &board,
+                                &board_state,
                                 newly_selected_square,
                                 &newly_selected_piece,
                                 ctx,
@@ -449,8 +439,13 @@ impl Scene for GameScene {
                     .get_board()
                     .get_piece_at_square(newly_selected_square)
                 {
-                    if newly_selected_piece.color == board.player_to_move {
-                        self.handle_move(&board, newly_selected_square, &newly_selected_piece, ctx);
+                    if newly_selected_piece.color == board_state.player_to_move {
+                        self.handle_move(
+                            &board_state,
+                            newly_selected_square,
+                            &newly_selected_piece,
+                            ctx,
+                        );
                     }
                 }
             }
