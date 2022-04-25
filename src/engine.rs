@@ -16,12 +16,7 @@ impl Engine {
             computing_thread_handle: None,
         }
     }
-    pub fn make_move(&mut self, board_state: BoardState) -> Option<ChessMove> {
-        let maybe_result = self.receiver.try_recv();
-        if maybe_result.is_ok() {
-            self.computing_thread_handle = None;
-            return Some(maybe_result.unwrap());
-        }
+    pub fn maybe_calculate_move(&mut self, board_state: BoardState) -> Option<ChessMove> {
         if self.computing_thread_handle.is_none() {
             let tx = self.sender.clone();
             self.computing_thread_handle = Some(thread::spawn(move || {
@@ -31,6 +26,11 @@ impl Engine {
                 let _ = tx.send(moves.last().unwrap().clone());
                 drop(tx);
             }));
+        }
+        let maybe_result = self.receiver.try_recv();
+        if maybe_result.is_ok() {
+            self.computing_thread_handle = None;
+            return Some(maybe_result.unwrap());
         }
         None
     }

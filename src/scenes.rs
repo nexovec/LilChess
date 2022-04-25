@@ -110,7 +110,6 @@ struct GameScene {
     is_selectable: bool,
     engine: Option<Engine>,
 }
-// FIXME: the timers correspond to the wrong color
 impl GameScene {
     fn new(ctx: &mut Context, engine: Option<Engine>) -> tetra::Result<GameScene> {
         // TODO: setup engine
@@ -241,6 +240,7 @@ impl GameScene {
             self.on_piece_taken();
         }
         if move_info.was_check {
+            // FIXME: doesn't run
             self.on_check();
         }
         if move_info.was_checkmate {
@@ -393,7 +393,11 @@ impl Scene for GameScene {
             && self.player_whose_time_is_ticking.is_some()
             && board_state.player_to_move == PlayerColor::BLACK
         {
-            move_to_make = self.engine.as_mut().unwrap().make_move(board_state);
+            move_to_make = self
+                .engine
+                .as_mut()
+                .unwrap()
+                .maybe_calculate_move(board_state);
             // DEBUG:
             if move_to_make.is_some() {
                 println!("Engine made a move!");

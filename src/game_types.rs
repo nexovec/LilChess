@@ -275,9 +275,7 @@ impl BoardState {
             return false;
         }
         if player_color == PlayerColor::BLACK
-        // TODO: replace with history.now() or GameContainer::position()
-            && self.castling_rules.black_can_still_castle_k
-                == false
+            && self.castling_rules.black_can_still_castle_k == false
         {
             return false;
         }
@@ -308,9 +306,7 @@ impl BoardState {
             return false;
         }
         if player_color == PlayerColor::BLACK
-        // TODO: replace with history.now() or GameContainer::position()
-            && self.castling_rules.black_can_still_castle_q
-                == false
+            && self.castling_rules.black_can_still_castle_q == false
         {
             return false;
         }
@@ -345,24 +341,22 @@ impl BoardState {
         MovePlausibility::MOVE
     }
     pub fn is_check(&self, color: Option<PlayerColor>) -> bool {
-        // TODO:
-        let moves = self.get_all_plausible_moves();
         if color.is_none() {
             return self.is_check(Some(self.player_to_move));
         }
-        if let Some(king) = self
+        let king = self
             .pieces
             .iter()
-            .find(|thing| thing.piece_type == PieceType::KING && thing.color == color.unwrap())
-        {
-            let king_pos = king.pos();
-            for mv in moves {
-                if mv.to.pos() == king_pos && mv.to.color == PlayerColor::opposite(color.unwrap()) {
-                    return true;
-                }
-            }
-        } else {
+            .find(|thing| thing.piece_type == PieceType::KING && thing.color == color.unwrap());
+        if king.is_none() {
             panic!("There is no king!");
+        }
+        let king_pos = king.unwrap().pos();
+        let moves = self.get_all_plausible_moves();
+        for mv in moves {
+            if mv.to.pos() == king_pos && mv.to.color == PlayerColor::opposite(color.unwrap()) {
+                return true;
+            }
         }
         false
     }
@@ -566,7 +560,6 @@ impl BoardState {
 
                 if can_en_passant {
                     if let Some(en_passant_x_coord) = self.can_take_en_passant {
-                        // TODO: also remove the opponents piece if move is en passant
                         if en_passant_x_coord == in_piece.x + 1 {
                             let new_piece = Piece::new(
                                 in_piece.x + 1,
