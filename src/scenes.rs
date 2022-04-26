@@ -235,7 +235,7 @@ impl GameScene {
     }
     pub fn execute_move(&mut self, mv: ChessMove) -> Option<PlayerColor> {
         let board_state = self.game.get_board();
-        let move_info = self.game.history.execute_move(mv);
+        let move_info = self.game.history.execute_move(&mv);
         if move_info.was_takes {
             self.on_piece_taken();
         }

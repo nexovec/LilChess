@@ -92,7 +92,7 @@ impl GameHistory {
     pub fn get_board(&mut self) -> &BoardState {
         self.board_states.last().unwrap()
     }
-    pub fn execute_move(&mut self, mv: ChessMove) -> MoveDescription {
+    pub fn execute_move(&mut self, mv: &ChessMove) -> MoveDescription {
         let board_state = self.get_board().clone();
         self.moves.push(mv.clone());
         let board = self.get_board().to_owned();
@@ -106,14 +106,13 @@ impl GameHistory {
                     && ((piece_there.color == PlayerColor::WHITE && piece_there.y == 3)
                         || (piece_there.color == PlayerColor::BLACK && piece_there.y == 4)))
         });
-        let was_checkmate = board_after_move.get_all_legal_moves().len() == 0;
-        let was_check = board_after_move.is_check(None);
-        self.board_states.push(board_after_move);
-        MoveDescription {
-            was_check: was_check,
-            was_checkmate: was_checkmate,
+        let result = MoveDescription {
+            was_check: board_after_move.evaluate_is_check(None),
+            was_checkmate: board_after_move.evaluate_is_checkmate(),
             was_takes,
-        }
+        };
+        self.board_states.push(board_after_move);
+        result
     }
 }
 
@@ -136,8 +135,18 @@ impl BoardState {
         state.can_castle_q_this_move = state.evaluate_can_queen_side_castle(state.player_to_move);
         state
     }
+    pub fn evaluate_is_checkmate(&self) -> bool {
+        self.get_all_legal_moves().len() == 0
+    }
+    pub fn score_for_current_player(&self, score_amount: f32) -> f32 {
+        let result = match self.player_to_move {
+            PlayerColor::WHITE => score_amount,
+            PlayerColor::BLACK => -score_amount,
+        };
+        result
+    }
     /** This is an unsafe funtion, validate the moves yourself! */
-    pub fn after_move(&self, mv: ChessMove) -> BoardState {
+    pub fn after_move(&self, mv: &ChessMove) -> BoardState {
         // TODO: check castles get disabled properly
         let mut has_taken_en_passant: bool = false;
         if self.can_take_en_passant.is_some()
@@ -164,7 +173,7 @@ impl BoardState {
                 }
             }
         }
-        let mut pieces = Vec::<Piece>::new();
+        let mut pieces = Vec::<Piece>::with_capacity(32);
         for i in &self.pieces {
             if has_taken_en_passant
                 && PlayerColor::opposite(self.player_to_move) == i.color
@@ -223,7 +232,7 @@ impl BoardState {
             let piece_from = Piece::new(7, y, PieceType::ROOK, self.player_to_move);
             let piece_to = Piece::new(5, y, PieceType::ROOK, self.player_to_move);
             let mut rook_moved =
-                position_after_move.after_move(ChessMove::new(piece_from, piece_to));
+                position_after_move.after_move(&ChessMove::new(piece_from, piece_to));
             rook_moved.player_to_move = PlayerColor::opposite(self.player_to_move);
             return rook_moved;
         }
@@ -236,7 +245,7 @@ impl BoardState {
             let piece_from = Piece::new(0, y, PieceType::ROOK, self.player_to_move);
             let piece_to = Piece::new(3, y, PieceType::ROOK, self.player_to_move);
             let mut rook_moved =
-                position_after_move.after_move(ChessMove::new(piece_from, piece_to));
+                position_after_move.after_move(&ChessMove::new(piece_from, piece_to));
             rook_moved.player_to_move = PlayerColor::opposite(self.player_to_move);
             return rook_moved;
         }
@@ -327,9 +336,9 @@ impl BoardState {
 
         MovePlausibility::MOVE
     }
-    pub fn is_check(&self, color: Option<PlayerColor>) -> bool {
+    pub fn evaluate_is_check(&self, color: Option<PlayerColor>) -> bool {
         if color.is_none() {
-            return self.is_check(Some(self.player_to_move));
+            return self.evaluate_is_check(Some(self.player_to_move));
         }
         let king = self
             .pieces
@@ -366,7 +375,8 @@ impl BoardState {
         true
     }
     pub fn get_plausible_moves(&self, p: &Piece) -> Vec<ChessMove> {
-        let mut moves = Vec::<ChessMove>::new();
+        let mut moves = Vec::<ChessMove>::with_capacity(32);
+        // let mut moves = Vec::<ChessMove>::new();
         let mut in_piece: Piece = p.clone();
         match in_piece.piece_type {
             PieceType::BISHOP => {
@@ -709,7 +719,8 @@ impl BoardState {
         moves
     }
     fn get_all_plausible_moves(&self) -> Vec<ChessMove> {
-        let mut moves = Vec::<ChessMove>::new();
+        let mut moves = Vec::<ChessMove>::with_capacity(32);
+        // let mut moves = Vec::<ChessMove>::new();
         let pieces = &self.pieces;
         for piece in pieces {
             if piece.color == self.player_to_move {
@@ -723,13 +734,16 @@ impl BoardState {
         let legal_moves: Vec<ChessMove> = plausible_moves
             .into_iter()
             .filter(|mv: &ChessMove| -> bool {
-                !self.after_move(*mv).is_check(Some(self.player_to_move))
+                !self
+                    .after_move(mv)
+                    .evaluate_is_check(Some(self.player_to_move))
             })
             .collect();
         legal_moves
     }
     pub fn get_all_legal_moves(&self) -> Vec<ChessMove> {
-        let mut legal_moves = Vec::<ChessMove>::new();
+        let mut legal_moves = Vec::<ChessMove>::with_capacity(32);
+        // let mut legal_moves = Vec::<ChessMove>::new();
         for p in self.pieces.iter() {
             if p.color != self.player_to_move {
                 continue;

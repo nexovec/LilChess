@@ -8,11 +8,11 @@ pub struct Engine {
     receiver: mpsc::Receiver<ChessMove>,
     computing_thread_handle: Option<thread::JoinHandle<()>>,
 }
-#[derive(Clone)]
-pub struct PositionEvaluationResult {
-    scored_mv: ChessMove,
-    score: f32,
-}
+// #[derive(Clone)]
+// pub struct PositionEvaluationResult {
+//     scored_mv: ChessMove,
+//     score: f32,
+// }
 impl Engine {
     pub fn new() -> Engine {
         let (sx, rx) = mpsc::channel();
@@ -23,7 +23,32 @@ impl Engine {
         }
     }
     fn static_position_evaluation(board: &BoardState) -> f32 {
-        1.0f32
+        let mut result = 0.0f32;
+        // TODO: precompute MoveDescription per move
+        if board.evaluate_is_check(None) {
+            result += board.score_for_current_player(-1.0f32);
+        }
+        if board.evaluate_is_checkmate() {
+            result -= board.score_for_current_player(-1000.0f32);
+        }
+        for piece in board.pieces.iter() {
+            match piece.color {
+                PlayerColor::WHITE => result += Engine::get_piece_worth(piece),
+                PlayerColor::BLACK => result -= Engine::get_piece_worth(piece),
+            }
+        }
+        result
+    }
+    fn get_piece_worth(p: &Piece) -> f32 {
+        let result = match p.piece_type {
+            PieceType::BISHOP => 3.2,
+            PieceType::KNIGHT => 3.0,
+            PieceType::ROOK => 5.0,
+            PieceType::QUEEN => 9.0,
+            PieceType::PAWN => 1.0,
+            PieceType::KING => 0.0,
+        };
+        result
     }
     fn compute_position_score(board_state: &BoardState, depth: u32) -> f32 {
         let moves = board_state.get_all_legal_moves();
@@ -35,20 +60,20 @@ impl Engine {
                 .iter()
                 .min_by(|mv1, mv2| {
                     let static_position_score_1 =
-                        Engine::static_position_evaluation(&board_state.after_move(**mv1));
+                        Engine::static_position_evaluation(&board_state.after_move(*mv1));
                     let static_position_score_2 =
-                        Engine::static_position_evaluation(&board_state.after_move(**mv2));
+                        Engine::static_position_evaluation(&board_state.after_move(*mv2));
                     static_position_score_1
                         .partial_cmp(&static_position_score_2)
                         .unwrap()
                 })
                 .unwrap();
-            return Engine::static_position_evaluation(&board_state.after_move(*best_move));
+            return Engine::static_position_evaluation(&board_state.after_move(best_move));
         }
         let subnode_scores = moves
             .iter()
             .map(|mv| {
-                let new_position = board_state.after_move(*mv);
+                let new_position = board_state.after_move(mv);
                 Engine::compute_position_score(&new_position, depth - 1)
             })
             .collect::<Vec<_>>();
@@ -65,9 +90,9 @@ impl Engine {
         // let best_move = moves.last().unwrap();
         let best_move = moves
             .iter()
-            .max_by(|mv1, mv2| {
-                let score1 = Engine::compute_position_score(&board_state.after_move(**mv1), depth);
-                let score2 = Engine::compute_position_score(&board_state.after_move(**mv2), depth);
+            .min_by(|mv1, mv2| {
+                let score1 = Engine::compute_position_score(&board_state.after_move(*mv1), depth);
+                let score2 = Engine::compute_position_score(&board_state.after_move(*mv2), depth);
                 score1.partial_cmp(&score2).unwrap()
             })
             .unwrap()
