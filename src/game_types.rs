@@ -165,38 +165,25 @@ impl BoardState {
             }
         }
         let mut pieces = Vec::<Piece>::new();
-        // push new pieces
-        if has_taken_en_passant {
-            for i in &self.pieces {
-                if PlayerColor::opposite(self.player_to_move) == i.color
-                    && i.piece_type == PieceType::PAWN
-                    && i.x == mv.to.x
-                    && ((i.color == PlayerColor::BLACK && i.y == 4)
-                        || (i.color == PlayerColor::WHITE && i.y == 3))
-                {
-                    continue;
-                }
-                if mv.to.pos() == i.pos() {
-                    continue;
-                }
-                if mv.from.pos() == i.pos() {
-                    continue;
-                }
-                pieces.push(i.clone());
+        for i in &self.pieces {
+            if has_taken_en_passant
+                && PlayerColor::opposite(self.player_to_move) == i.color
+                && i.piece_type == PieceType::PAWN
+                && i.x == mv.to.x
+                && ((i.color == PlayerColor::BLACK && i.y == 4)
+                    || (i.color == PlayerColor::WHITE && i.y == 3))
+            {
+                continue;
             }
-            pieces.push(mv.to);
-        } else {
-            for i in &self.pieces {
-                if mv.to.pos() == i.pos() {
-                    continue;
-                }
-                if mv.from.pos() == i.pos() {
-                    continue;
-                }
-                pieces.push(i.clone());
+            if mv.to.pos() == i.pos() {
+                continue;
             }
-            pieces.push(mv.to);
+            if mv.from.pos() == i.pos() {
+                continue;
+            }
+            pieces.push(i.clone());
         }
+        pieces.push(mv.to);
         let did_q_castle: bool = mv.is_queen_side_castles();
         let did_k_castle: bool = mv.is_king_side_castles();
 
