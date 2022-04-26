@@ -9,3 +9,9 @@ tetra = "*"
 
 # [features]
 # sdl2_static_link = ["sdl2/static-link"]
+
+[profile.release]
+debug = 1
+
+[rust]
+debuginfo-level = 1
