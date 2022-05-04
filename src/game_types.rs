@@ -16,7 +16,8 @@ pub enum MovePlausibility {
 }
 #[derive(Clone)]
 pub struct BoardState {
-    pub pieces: Vec<Piece>,
+    pub squares: Vec<Option<Piece>>,
+    // pub pieces: Vec<Piece>,
     pub player_to_move: PlayerColor,
     pub castling_rules: CastlingRules,
     pub can_castle_k_this_move: bool,
@@ -97,7 +98,13 @@ impl GameHistory {
         self.moves.push(mv.clone());
         let board = self.get_board().to_owned();
         let board_after_move = board.after_move(mv);
-        let was_takes = board_state.pieces.iter().any(|piece_there| {
+        let pieces = board_state
+            .squares
+            .iter()
+            .filter(|thing| thing.is_some())
+            .map(|thing| thing.unwrap())
+            .collect::<Vec<Piece>>();
+        let was_takes = pieces.iter().any(|piece_there| {
             mv.to.pos() == piece_there.pos()
                 || (board_state.can_take_en_passant.is_some()
                     && mv.to.piece_type == PieceType::PAWN
@@ -123,8 +130,16 @@ impl BoardState {
         castling_rules: CastlingRules,
         can_take_en_passant: Option<i8>,
     ) -> BoardState {
+        let mut squares = Vec::<Option<Piece>>::with_capacity(64);
+        for i in 0..64 {
+            squares.push(None);
+        }
+        for piece in pieces.iter() {
+            let index: usize = (piece.x as usize) + (piece.y as usize) * 8;
+            squares[index] = Some(piece.clone());
+        }
         let mut state = BoardState {
-            pieces: pieces,
+            squares: squares,
             player_to_move: player_to_move,
             castling_rules: castling_rules,
             can_castle_k_this_move: false,
@@ -174,7 +189,8 @@ impl BoardState {
             }
         }
         let mut pieces = Vec::<Piece>::with_capacity(32);
-        for i in &self.pieces {
+        let self_pieces = self.get_pieces_vec();
+        for i in &self_pieces {
             if has_taken_en_passant
                 && PlayerColor::opposite(self.player_to_move) == i.color
                 && i.piece_type == PieceType::PAWN
@@ -251,13 +267,21 @@ impl BoardState {
         }
         position_after_move
     }
+    pub fn get_pieces_vec(&self) -> Vec<Piece> {
+        self.squares
+            .iter()
+            .filter(|thing| thing.is_some())
+            .map(|thing| thing.unwrap())
+            .collect::<Vec<_>>()
+    }
     pub fn get_piece_at_square(&self, pos: Vec2<i8>) -> Option<Piece> {
-        for l in &self.pieces {
-            if l.x == pos.x && l.y == pos.y {
-                return Some(*l);
-            }
-        }
-        None
+        // for l in &self.pieces {
+        //     if l.x == pos.x && l.y == pos.y {
+        //         return Some(*l);
+        //     }
+        // }
+        // None
+        self.squares[(pos.x + pos.y * 8) as usize]
     }
     fn evaluate_can_king_side_castle(&self, player_color: PlayerColor) -> bool {
         // TODO: test
@@ -340,8 +364,8 @@ impl BoardState {
         if color.is_none() {
             return self.evaluate_is_check(Some(self.player_to_move));
         }
-        let king = self
-            .pieces
+        let self_pieces = self.get_pieces_vec();
+        let king = self_pieces
             .iter()
             .find(|thing| thing.piece_type == PieceType::KING && thing.color == color.unwrap());
         if king.is_none() {
@@ -721,7 +745,7 @@ impl BoardState {
     fn get_all_plausible_moves(&self) -> Vec<ChessMove> {
         let mut moves = Vec::<ChessMove>::with_capacity(32);
         // let mut moves = Vec::<ChessMove>::new();
-        let pieces = &self.pieces;
+        let pieces = self.get_pieces_vec();
         for piece in pieces {
             if piece.color == self.player_to_move {
                 moves.append(&mut self.get_plausible_moves(&piece));
@@ -744,7 +768,7 @@ impl BoardState {
     pub fn get_all_legal_moves(&self) -> Vec<ChessMove> {
         let mut legal_moves = Vec::<ChessMove>::with_capacity(32);
         // let mut legal_moves = Vec::<ChessMove>::new();
-        for p in self.pieces.iter() {
+        for p in self.get_pieces_vec().iter() {
             if p.color != self.player_to_move {
                 continue;
             }

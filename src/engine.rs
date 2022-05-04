@@ -30,7 +30,7 @@ impl Engine {
         if board.evaluate_is_checkmate() {
             result -= board.score_for_current_player(-1000.0f32);
         }
-        for piece in board.pieces.iter() {
+        for piece in board.get_pieces_vec().iter() {
             match piece.color {
                 PlayerColor::WHITE => result += Engine::get_piece_worth(piece),
                 PlayerColor::BLACK => result -= Engine::get_piece_worth(piece),

@@ -285,7 +285,7 @@ impl GameScene {
         }
         if self.should_rerender_pieces {
             let mut new_pieces: Vec<Box<dyn Scene>> = Vec::new();
-            for i in board.pieces.iter() {
+            for i in board.get_pieces_vec().iter() {
                 new_pieces.push(Box::new(GameScene::get_image(i, &mut self.assets, ctx)?));
             }
             let _ = std::mem::replace(&mut self.pieces_box.children, new_pieces);
