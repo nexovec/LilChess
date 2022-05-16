@@ -113,8 +113,8 @@ struct GameScene {
 impl GameScene {
     fn new(ctx: &mut Context, engine: Option<Engine>) -> tetra::Result<GameScene> {
         // TODO: setup engine
-        let white_time_limit = 120.0;
-        let black_time_limit = 120.0;
+        let white_time_limit = 300.0;
+        let black_time_limit = 300.0;
 
         let assets = Assets::load_assets(ctx)?;
         let board_size = Vec2::<f32>::new(400.0, 400.0);
@@ -185,18 +185,6 @@ impl GameScene {
         // FIXME: And no, don't use VectorFontBuilder here
         // FIXME: white timer is the black timer and the black timer is the white timer
         let font = VectorFontBuilder::new("./res/fonts/Exo2.otf")?.with_size(ctx, 32.0)?;
-        let black_text = format!(
-            "{:02}:{:02}",
-            self.black_time_remaining as i32 / 60,
-            self.black_time_remaining as i32 % 60
-        );
-        let mut white_timer: MenuButton = MenuButton::new(
-            Vec2::<i32>::new(10, 10),
-            Vec2::<i32>::new(530, 430),
-            Text::new(black_text, font.clone()),
-            Box::new(|ctx: &mut Context| Transition::None),
-        );
-        white_timer.draw(ctx)?;
         let white_text = format!(
             "{:02}:{:02}",
             self.white_time_remaining as i32 / 60,
@@ -204,11 +192,23 @@ impl GameScene {
         );
         let mut white_timer: MenuButton = MenuButton::new(
             Vec2::<i32>::new(10, 10),
-            Vec2::<i32>::new(530, 120),
+            Vec2::<i32>::new(530, 430),
             Text::new(white_text, font.clone()),
             Box::new(|ctx: &mut Context| Transition::None),
         );
         white_timer.draw(ctx)?;
+        let black_text = format!(
+            "{:02}:{:02}",
+            self.black_time_remaining as i32 / 60,
+            self.black_time_remaining as i32 % 60
+        );
+        let mut black_timer: MenuButton = MenuButton::new(
+            Vec2::<i32>::new(10, 10),
+            Vec2::<i32>::new(530, 120),
+            Text::new(black_text, font.clone()),
+            Box::new(|ctx: &mut Context| Transition::None),
+        );
+        black_timer.draw(ctx)?;
         Ok(Transition::None)
     }
     pub fn on_check(&self) {

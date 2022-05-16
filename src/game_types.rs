@@ -1,7 +1,6 @@
 use tetra::math::Vec2;
 #[inline(always)]
 pub fn is_within_chessboard(p: Vec2<i8>) -> bool {
-    // TODO: cache
     !(p.x >= 8 || p.y >= 8 || p.x < 0 || p.y < 0)
 }
 pub struct GameHistory {
@@ -17,7 +16,6 @@ pub enum MovePlausibility {
 #[derive(Clone)]
 pub struct BoardState {
     pub squares: Vec<Option<Piece>>,
-    // pub pieces: Vec<Piece>,
     pub player_to_move: PlayerColor,
     pub castling_rules: CastlingRules,
     pub can_castle_k_this_move: bool,
@@ -79,7 +77,6 @@ impl CastlingRules {
 }
 impl GameHistory {
     pub fn new(board_states: Vec<BoardState>, moves: Option<Vec<ChessMove>>) -> GameHistory {
-        // let board_states = vec![BoardState::default_board()?];
         let board_states = board_states;
         let moves_unwrapped = match moves {
             Some(thing) => thing,
@@ -98,31 +95,43 @@ impl GameHistory {
         self.moves.push(mv.clone());
         let board = self.get_board().to_owned();
         let board_after_move = board.after_move(mv);
+        // TODO: slow, BOOO!! optimize.
         let pieces = board_state
             .squares
             .iter()
             .filter(|thing| thing.is_some())
             .map(|thing| thing.unwrap())
             .collect::<Vec<Piece>>();
+        // TODO: slow, BOOO!! optimize.
+        let en_passant_takeable_pawn = pieces.iter().find(|piece_there| {
+            board_state.can_take_en_passant.is_some()
+                && piece_there.x == board_state.can_take_en_passant.unwrap()
+                && piece_there.color == PlayerColor::opposite(mv.to.color)
+                && ((piece_there.color == PlayerColor::WHITE && piece_there.y == 3)
+                    || (piece_there.color == PlayerColor::BLACK && piece_there.y == 4))
+        });
         let was_takes = pieces.iter().any(|piece_there| {
+            // TODO: en-passant false positives here!
+            // println!("{:?}",board_state.can_take_en_passant);
             mv.to.pos() == piece_there.pos()
-                || (board_state.can_take_en_passant.is_some()
+                || (en_passant_takeable_pawn.is_some()
                     && mv.to.piece_type == PieceType::PAWN
-                    && mv.to.x == board_state.can_take_en_passant.unwrap()
-                    && piece_there.color == PlayerColor::opposite(mv.to.color)
-                    && ((piece_there.color == PlayerColor::WHITE && piece_there.y == 3)
-                        || (piece_there.color == PlayerColor::BLACK && piece_there.y == 4)))
+                    && mv.to.x != mv.from.x
+                    && mv.to.x == en_passant_takeable_pawn.unwrap().x
+                    && ((mv.from.color == PlayerColor::WHITE && mv.from.y == 4)
+                        || (mv.from.color == PlayerColor::BLACK && mv.from.y == 3)))
         });
         let result = MoveDescription {
             was_check: board_after_move.evaluate_is_check(None),
             was_checkmate: board_after_move.evaluate_is_checkmate(),
-            was_takes,
+            was_takes: was_takes,
         };
         self.board_states.push(board_after_move);
         result
     }
 }
 
+// TODO: is_square_attacked function
 impl BoardState {
     pub fn new(
         pieces: Vec<Piece>,
@@ -275,16 +284,9 @@ impl BoardState {
             .collect::<Vec<_>>()
     }
     pub fn get_piece_at_square(&self, pos: Vec2<i8>) -> Option<Piece> {
-        // for l in &self.pieces {
-        //     if l.x == pos.x && l.y == pos.y {
-        //         return Some(*l);
-        //     }
-        // }
-        // None
         self.squares[(pos.x + pos.y * 8) as usize]
     }
     fn evaluate_can_king_side_castle(&self, player_color: PlayerColor) -> bool {
-        // TODO: test
         let y = match player_color {
             PlayerColor::WHITE => 0,
             PlayerColor::BLACK => 7,
@@ -314,7 +316,6 @@ impl BoardState {
         false
     }
     fn evaluate_can_queen_side_castle(&self, player_color: PlayerColor) -> bool {
-        // TODO: test
         let y = match player_color {
             PlayerColor::WHITE => 0,
             PlayerColor::BLACK => 7,
