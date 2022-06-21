@@ -572,36 +572,20 @@ impl BoardState {
             PieceType::PAWN => {
                 // TODO: promotions
                 // en passant
-                let mut can_en_passant = self.can_take_en_passant.is_some();
-                if in_piece.color == PlayerColor::WHITE && in_piece.y != 4 {
-                    can_en_passant = false;
-                }
-                if in_piece.color == PlayerColor::BLACK && in_piece.y != 3 {
-                    can_en_passant = false;
-                }
-
-                if can_en_passant {
-                    if let Some(en_passant_x_coord) = self.can_take_en_passant {
-                        if en_passant_x_coord == in_piece.x + 1 {
-                            let new_piece = Piece::new(
-                                in_piece.x + 1,
-                                in_piece.y + 1,
-                                PieceType::PAWN,
-                                self.player_to_move,
-                            );
-                            let move_to_make = ChessMove::new(in_piece.clone(), new_piece);
-                            moves.push(move_to_make);
-                        }
-                        if en_passant_x_coord == in_piece.x - 1 {
-                            let new_piece = Piece::new(
-                                in_piece.x - 1,
-                                in_piece.y + 1,
-                                PieceType::PAWN,
-                                self.player_to_move,
-                            );
-                            let move_to_make = ChessMove::new(in_piece.clone(), new_piece);
-                            moves.push(move_to_make);
-                        }
+                if let Some(en_passant_x_coord) = self.can_take_en_passant {
+                    if (en_passant_x_coord == in_piece.x + 1
+                        || en_passant_x_coord == in_piece.x - 1)
+                        && !(in_piece.color == PlayerColor::BLACK && in_piece.y != 3)
+                        && !(in_piece.color == PlayerColor::WHITE && in_piece.y != 4)
+                    {
+                        let y_to = match self.player_to_move {
+                            PlayerColor::BLACK => 2,
+                            PlayerColor::WHITE => 5,
+                        };
+                        let new_piece =
+                            Piece::new(en_passant_x_coord, y_to, PieceType::PAWN, in_piece.color);
+                        let move_to_make = ChessMove::new(in_piece.clone(), new_piece);
+                        moves.push(move_to_make);
                     }
                 }
 

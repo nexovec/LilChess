@@ -1,6 +1,5 @@
 use crate::game_types::*;
 use std::sync::mpsc;
-use std::sync::mpsc::Sender;
 use std::thread;
 pub struct Engine {
     sender: mpsc::Sender<ChessMove>,
