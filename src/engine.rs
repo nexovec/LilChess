@@ -55,26 +55,42 @@ impl Engine {
         // TODO: Track capture sequences past depth
         // TODO: Track mate threats past depth
         // TODO: Track capture threats past depth
-        let moves = board_state.get_all_legal_moves();
+        let mut moves = board_state.get_all_legal_moves();
         if moves.len() == 0 {
             return Engine::static_position_evaluation(board_state, mv);
         }
         if depth == 1 {
-            let best_move = moves
-                .iter()
-                .min_by(|mv1, mv2| {
-                    let static_position_score_1 =
-                        Engine::static_position_evaluation(&board_state.after_move(*mv1), mv1);
-                    let static_position_score_2 =
-                        Engine::static_position_evaluation(&board_state.after_move(*mv2), mv2);
-                    static_position_score_1
-                        .partial_cmp(&static_position_score_2)
-                        .unwrap()
-                })
-                .unwrap();
+            // let best_move = moves
+            //     .iter()
+            //     .min_by(|mv1, mv2| {
+            //         let static_position_score_1 =
+            //             Engine::static_position_evaluation(&board_state.after_move(*mv1), mv1);
+            //         let static_position_score_2 =
+            //             Engine::static_position_evaluation(&board_state.after_move(*mv2), mv2);
+            //         static_position_score_1
+            //             .partial_cmp(&static_position_score_2)
+            //             .unwrap()
+            //     })
+            //     .unwrap();
+            // return Engine::static_position_evaluation(
+            //     &board_state.after_move(best_move),
+            //     best_move,
+            // );
+            let mut best_move: Option<ChessMove> = None;
+            let mut best_score: Option<f32> = None;
+            while let Some(mv) = moves.pop() {
+                let pos = board_state.after_move(&mv);
+                let score = Engine::static_position_evaluation(&pos, &mv);
+                // TODO: verify option compare is right here:
+                if best_score.is_none() || best_score.unwrap().partial_cmp(&score).unwrap().is_lt()
+                {
+                    best_score = Some(score);
+                    best_move = Some(mv)
+                }
+            }
             return Engine::static_position_evaluation(
-                &board_state.after_move(best_move),
-                best_move,
+                &board_state.after_move(&best_move.unwrap()),
+                &best_move.unwrap(),
             );
         }
         let subnode_scores = moves
@@ -83,17 +99,23 @@ impl Engine {
                 let new_position = board_state.after_move(mv);
                 Engine::compute_position_score(&new_position, mv, depth - 1)
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<f32>>();
         if board_state.player_to_move == PlayerColor::WHITE {
-            return *subnode_scores
-                .iter()
-                .max_by(|a, b| a.partial_cmp(b).unwrap())
-                .unwrap();
+            return subnode_scores.iter().fold(0.0f32, |a, &b| a.max(b));
+
+            // let iter = subnode_scores.iter();
+            // return *iter.max().unwrap();
+
+            // return *subnode_scores
+            //     .iter()
+            //     .max_by(|a, b| a.partial_cmp(b).unwrap())
+            //     .unwrap();
         } else {
-            return *subnode_scores
-                .iter()
-                .min_by(|a, b| a.partial_cmp(b).unwrap())
-                .unwrap();
+            return subnode_scores.iter().fold(f32::INFINITY, |a, &b| a.min(b));
+            // return *subnode_scores
+            //     .iter()
+            //     .min_by(|a, b| a.partial_cmp(b).unwrap())
+            //     .unwrap();
         }
     }
     pub fn maybe_calculate_move(&mut self, board_state: BoardState) -> Option<ChessMove> {
@@ -104,24 +126,40 @@ impl Engine {
                 let moves = board_state.get_all_legal_moves();
                 let depth = 2;
                 // let best_move = moves.last().unwrap();
-                let best_move = moves
-                    .iter()
-                    .min_by(|mv1, mv2| {
-                        let score1 = Engine::compute_position_score(
-                            &board_state.after_move(*mv1),
-                            mv1,
-                            depth,
-                        );
-                        let score2 = Engine::compute_position_score(
-                            &board_state.after_move(*mv2),
-                            mv2,
-                            depth,
-                        );
-                        score1.partial_cmp(&score2).unwrap()
-                    })
-                    .unwrap()
-                    .to_owned();
-                let _ = tx.send(best_move);
+                // let best_move = moves
+                //     .iter()
+                //     .min_by(|mv1, mv2| {
+                //         let score1 = Engine::compute_position_score(
+                //             &board_state.after_move(*mv1),
+                //             mv1,
+                //             depth,
+                //         );
+                //         let score2 = Engine::compute_position_score(
+                //             &board_state.after_move(*mv2),
+                //             mv2,
+                //             depth,
+                //         );
+                //         score1.partial_cmp(&score2).unwrap()
+                //     })
+                //     .unwrap()
+                //     .to_owned();
+                let mut best_move = moves.last().unwrap();
+                let mut best_score = Engine::compute_position_score(
+                    &board_state.after_move(&best_move),
+                    &best_move,
+                    depth,
+                );
+                // FIXME: pawn can take on the other side of the board
+                let mut moves_iter = moves.iter();
+                while let Some(mv) = moves_iter.next() {
+                    let score =
+                        Engine::compute_position_score(&board_state.after_move(&mv), &mv, depth);
+                    if score < best_score {
+                        best_score = score;
+                        best_move = &mv;
+                    }
+                }
+                let _ = tx.send(best_move.clone());
                 drop(tx);
             }));
         }

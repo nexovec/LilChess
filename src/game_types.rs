@@ -596,12 +596,8 @@ impl BoardState {
                             None => {}
                             Some(i) => {
                                 if i.color != in_piece.color {
-                                    let piece_to = Piece::new(
-                                        in_piece.x - 1,
-                                        in_piece.y + 1,
-                                        PieceType::PAWN,
-                                        in_piece.color,
-                                    );
+                                    let piece_to =
+                                        Piece::new(i.x, i.y, PieceType::PAWN, in_piece.color);
                                     moves.push(ChessMove::new(in_piece, piece_to));
                                 }
                             }
@@ -613,8 +609,8 @@ impl BoardState {
                             Some(i) => {
                                 if i.color != in_piece.color {
                                     let piece_to = Piece::new(
-                                        in_piece.x - 1,
-                                        in_piece.y - 1,
+                                        i.x,
+                                        i.y,
                                         PieceType::PAWN,
                                         in_piece.color,
                                     );
